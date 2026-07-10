@@ -8,7 +8,7 @@ import ContactButton from "@/components/ContactButton";
 import PropertyGrid from "@/components/PropertyGrid";
 import PropertySchema from "@/components/PropertySchema";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { properties } from "@/data/properties";
+import { getAnnonceById, getAnnonces } from "@/lib/supabase/annonces";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { formatPrice } from "@/utils/formatPrice";
 
@@ -16,7 +16,8 @@ interface PropertyPageProps {
   params: Promise<{ id: string }>;
 }
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const { properties } = await getAnnonces();
   return properties.map((property) => ({ id: property.id }));
 }
 
@@ -24,7 +25,7 @@ export async function generateMetadata({
   params,
 }: PropertyPageProps): Promise<Metadata> {
   const { id } = await params;
-  const property = properties.find((item) => item.id === id);
+  const { property } = await getAnnonceById(id);
 
   if (!property) {
     return { title: "Bien introuvable" };
@@ -58,12 +59,13 @@ export async function generateMetadata({
 
 export default async function PropertyPage({ params }: PropertyPageProps) {
   const { id } = await params;
-  const property = properties.find((item) => item.id === id);
+  const { property } = await getAnnonceById(id);
 
   if (!property) {
     notFound();
   }
 
+  const { properties } = await getAnnonces();
   const similarProperties = properties
     .filter((item) => item.id !== property.id && item.type === property.type)
     .slice(0, 3);

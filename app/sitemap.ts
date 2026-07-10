@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
-import { properties } from "@/data/properties";
+import { getAnnonces } from "@/lib/supabase/annonces";
 import { SITE_URL } from "@/lib/site";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { properties } = await getAnnonces();
   const propertyRoutes: MetadataRoute.Sitemap = properties.map((property) => ({
     url: `${SITE_URL}/properties/${property.id}`,
     changeFrequency: "weekly",

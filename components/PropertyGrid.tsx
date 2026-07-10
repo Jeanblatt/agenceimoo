@@ -1,13 +1,11 @@
 import PropertyCard from "@/components/PropertyCard";
-import { properties as allProperties, type Property } from "@/data/properties";
+import type { Property } from "@/data/properties";
 
 interface PropertyGridProps {
-  properties?: Property[];
+  properties: Property[];
 }
 
-export default function PropertyGrid({
-  properties = allProperties,
-}: PropertyGridProps) {
+export default function PropertyGrid({ properties }: PropertyGridProps) {
   if (properties.length === 0) {
     return (
       <p className="py-16 text-center text-sm text-stone-500">

@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { AdminProperty } from "@/data/adminProperties";
-import { properties as publicProperties } from "@/data/properties";
 import { formatPrice } from "@/utils/formatPrice";
 
 interface PropertyTableProps {
@@ -29,9 +28,9 @@ export default function PropertyTable({
 }: PropertyTableProps) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-  // Une annonce n'est "visitable" publiquement que si elle existe déjà
-  // dans les données du site vitrine (data/properties.ts).
-  const isPublished = (id: string) => publicProperties.some((p) => p.id === id);
+  // Une annonce ajoutée localement (non encore synchronisée) n'a pas
+  // de fiche publique correspondante.
+  const isPublished = (id: string) => !id.startsWith("local-");
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-stone-100">
