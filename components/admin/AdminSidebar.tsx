@@ -4,7 +4,14 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 
-export type AdminView = "dashboard" | "properties" | "add" | "edit" | "messages" | "settings";
+export type AdminView =
+  | "dashboard"
+  | "properties"
+  | "add"
+  | "edit"
+  | "reviews"
+  | "messages"
+  | "settings";
 
 interface NavItem {
   view: AdminView;
@@ -44,6 +51,17 @@ const navItems: NavItem[] = [
         <circle cx="12" cy="12" r="9" />
         <path strokeLinecap="round" d="M12 8v8M8 12h8" />
       </>
+    ),
+  },
+  {
+    view: "reviews",
+    label: "Avis clients",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m12 2.5 2.9 6.3 6.6.7-5 4.6 1.4 6.6L12 17.6l-5.9 3.1 1.4-6.6-5-4.6 6.6-.7L12 2.5Z"
+      />
     ),
   },
   {

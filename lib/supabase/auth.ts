@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
@@ -24,4 +25,20 @@ export function onAuthStateChange(callback: (session: Session | null) => void): 
     data: { subscription },
   } = supabase.auth.onAuthStateChange((_event, session) => callback(session));
   return () => subscription.unsubscribe();
+}
+
+/**
+ * `undefined` = vérification de session en cours, `null` = non connecté.
+ * Partagé par toutes les pages /admin/* pour éviter de dupliquer la logique
+ * de session sur chaque page.
+ */
+export function useAdminSession() {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    getCurrentSession().then(setSession);
+    return onAuthStateChange(setSession);
+  }, []);
+
+  return session;
 }

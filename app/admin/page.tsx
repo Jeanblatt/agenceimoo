@@ -2,15 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Session } from "@supabase/supabase-js";
-import AdminHeader from "@/components/admin/AdminHeader";
-import AdminLogin from "@/components/admin/AdminLogin";
-import AdminSidebar, { type AdminView } from "@/components/admin/AdminSidebar";
+import AdminShell from "@/components/admin/AdminShell";
 import DashboardStats from "@/components/admin/DashboardStats";
 import PropertyTable from "@/components/admin/PropertyTable";
 import PropertyForm from "@/components/admin/PropertyForm";
 import type { Property } from "@/data/properties";
-import { getCurrentSession, onAuthStateChange, signOut } from "@/lib/supabase/auth";
+import type { AdminView } from "@/components/admin/AdminSidebar";
 import {
   getAnnonces,
   insertAnnonce,
@@ -24,37 +21,7 @@ interface Feedback {
   message: string;
 }
 
-// `undefined` = vérification de session en cours, `null` = non connecté.
-function useAdminSession() {
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
-
-  useEffect(() => {
-    getCurrentSession().then(setSession);
-    return onAuthStateChange(setSession);
-  }, []);
-
-  return session;
-}
-
 export default function AdminDashboardPage() {
-  const session = useAdminSession();
-
-  if (session === undefined) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-stone-100">
-        <p className="text-sm text-stone-500">Chargement...</p>
-      </div>
-    );
-  }
-
-  if (session === null) {
-    return <AdminLogin />;
-  }
-
-  return <AdminDashboard userEmail={session.user.email ?? "Administrateur"} />;
-}
-
-function AdminDashboard({ userEmail }: { userEmail: string }) {
   const router = useRouter();
 
   const [properties, setProperties] = useState<Property[]>([]);
@@ -63,7 +30,6 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
 
   const [view, setView] = useState<AdminView>("dashboard");
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -94,10 +60,14 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
   }, [feedback]);
 
   const handleNavigate = (nextView: AdminView) => {
+    // "Avis clients" est une vraie page séparée, pas une vue locale.
+    if (nextView === "reviews") {
+      router.push("/admin/reviews");
+      return;
+    }
     if (nextView !== "edit") setEditingProperty(null);
     setSubmitError(null);
     setView(nextView);
-    setSidebarOpen(false);
   };
 
   const handleEdit = (property: Property) => {
@@ -164,132 +134,115 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-stone-100">
-      <AdminHeader
-        onMenuClick={() => setSidebarOpen(true)}
-        userEmail={userEmail}
-        onSignOut={signOut}
-      />
+    <AdminShell activeView={view} onNavigate={handleNavigate}>
+      {feedback && (
+        <div
+          className={`mb-6 rounded-lg px-4 py-3 text-sm ${
+            feedback.type === "success"
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-red-50 text-red-700"
+          }`}
+        >
+          {feedback.message}
+        </div>
+      )}
 
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1">
-        <AdminSidebar
-          activeView={view}
-          onNavigate={handleNavigate}
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+      {loadError && (
+        <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Impossible de charger les biens : {loadError}
+        </div>
+      )}
 
-        <main className="min-w-0 flex-1 px-4 py-8 md:px-8">
-          {feedback && (
-            <div
-              className={`mb-6 rounded-lg px-4 py-3 text-sm ${
-                feedback.type === "success"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-red-50 text-red-700"
-              }`}
-            >
-              {feedback.message}
+      {loading ? (
+        <p className="text-sm text-stone-500">Chargement des biens...</p>
+      ) : (
+        <>
+          {view === "dashboard" && (
+            <div className="space-y-8">
+              <div>
+                <h1 className="font-serif text-2xl text-stone-900">Tableau de bord</h1>
+                <p className="mt-1 text-sm text-stone-500">
+                  Vue d&apos;ensemble de votre portefeuille de biens.
+                </p>
+              </div>
+
+              <DashboardStats properties={properties} />
+
+              <PropertyTable
+                properties={properties.slice(0, 5)}
+                title="Dernières annonces"
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             </div>
           )}
 
-          {loadError && (
-            <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-              Impossible de charger les biens : {loadError}
+          {view === "properties" && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="font-serif text-2xl text-stone-900">Propriétés</h1>
+                <p className="mt-1 text-sm text-stone-500">
+                  {properties.length} bien{properties.length !== 1 ? "s" : ""} au total.
+                </p>
+              </div>
+
+              <PropertyTable
+                properties={properties}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             </div>
           )}
 
-          {loading ? (
-            <p className="text-sm text-stone-500">Chargement des biens...</p>
-          ) : (
-            <>
-              {view === "dashboard" && (
-                <div className="space-y-8">
-                  <div>
-                    <h1 className="font-serif text-2xl text-stone-900">Tableau de bord</h1>
-                    <p className="mt-1 text-sm text-stone-500">
-                      Vue d&apos;ensemble de votre portefeuille de biens.
-                    </p>
-                  </div>
-
-                  <DashboardStats properties={properties} />
-
-                  <PropertyTable
-                    properties={properties.slice(0, 5)}
-                    title="Dernières annonces"
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                </div>
-              )}
-
-              {view === "properties" && (
-                <div className="space-y-6">
-                  <div>
-                    <h1 className="font-serif text-2xl text-stone-900">Propriétés</h1>
-                    <p className="mt-1 text-sm text-stone-500">
-                      {properties.length} bien{properties.length !== 1 ? "s" : ""} au total.
-                    </p>
-                  </div>
-
-                  <PropertyTable
-                    properties={properties}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                </div>
-              )}
-
-              {view === "add" && (
-                <div className="space-y-6">
-                  <h1 className="font-serif text-2xl text-stone-900">Ajouter un bien</h1>
-                  <PropertyForm
-                    onSubmit={handleCreate}
-                    onCancel={() => setView("properties")}
-                    isSubmitting={isSubmitting}
-                    submitError={submitError}
-                  />
-                </div>
-              )}
-
-              {view === "edit" && editingProperty && (
-                <div className="space-y-6">
-                  <h1 className="font-serif text-2xl text-stone-900">Modifier le bien</h1>
-                  <PropertyForm
-                    initialValues={editingProperty}
-                    onSubmit={handleUpdate}
-                    onCancel={() => {
-                      setEditingProperty(null);
-                      setView("properties");
-                    }}
-                    isSubmitting={isSubmitting}
-                    submitError={submitError}
-                  />
-                </div>
-              )}
-
-              {view === "messages" && (
-                <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-stone-100">
-                  <h1 className="font-serif text-2xl text-stone-900">Messages</h1>
-                  <p className="mt-2 text-sm text-stone-500">
-                    La messagerie des prospects sera bientôt connectée au formulaire de
-                    contact du site.
-                  </p>
-                </div>
-              )}
-
-              {view === "settings" && (
-                <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-stone-100">
-                  <h1 className="font-serif text-2xl text-stone-900">Paramètres</h1>
-                  <p className="mt-2 text-sm text-stone-500">
-                    Les paramètres de l&apos;agence seront disponibles dans une prochaine
-                    version.
-                  </p>
-                </div>
-              )}
-            </>
+          {view === "add" && (
+            <div className="space-y-6">
+              <h1 className="font-serif text-2xl text-stone-900">Ajouter un bien</h1>
+              <PropertyForm
+                onSubmit={handleCreate}
+                onCancel={() => setView("properties")}
+                isSubmitting={isSubmitting}
+                submitError={submitError}
+              />
+            </div>
           )}
-        </main>
-      </div>
-    </div>
+
+          {view === "edit" && editingProperty && (
+            <div className="space-y-6">
+              <h1 className="font-serif text-2xl text-stone-900">Modifier le bien</h1>
+              <PropertyForm
+                initialValues={editingProperty}
+                onSubmit={handleUpdate}
+                onCancel={() => {
+                  setEditingProperty(null);
+                  setView("properties");
+                }}
+                isSubmitting={isSubmitting}
+                submitError={submitError}
+              />
+            </div>
+          )}
+
+          {view === "messages" && (
+            <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-stone-100">
+              <h1 className="font-serif text-2xl text-stone-900">Messages</h1>
+              <p className="mt-2 text-sm text-stone-500">
+                La messagerie des prospects sera bientôt connectée au formulaire de
+                contact du site.
+              </p>
+            </div>
+          )}
+
+          {view === "settings" && (
+            <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-stone-100">
+              <h1 className="font-serif text-2xl text-stone-900">Paramètres</h1>
+              <p className="mt-2 text-sm text-stone-500">
+                Les paramètres de l&apos;agence seront disponibles dans une prochaine
+                version.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </AdminShell>
   );
 }

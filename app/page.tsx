@@ -8,9 +8,16 @@ import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getAnnonces } from "@/lib/supabase/annonces";
+import { getApprovedReviews } from "@/lib/supabase/reviews";
+
+// Les biens et avis affichés ici viennent de Supabase et changent via
+// l'admin : la page doit être rendue à chaque requête (comme /biens et
+// /annonces), pas figée au moment du build.
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const { properties, error } = await getAnnonces();
+  const { reviews } = await getApprovedReviews();
 
   return (
     <>
@@ -21,7 +28,7 @@ export default async function Home() {
         <HomeProperties properties={properties} error={error} />
         <Services />
         <Stats />
-        <Testimonials />
+        <Testimonials reviews={reviews} />
         <CallToAction />
       </main>
 
