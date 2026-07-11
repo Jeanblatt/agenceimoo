@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import type { Property } from "@/data/properties";
 import { formatPrice } from "@/utils/formatPrice";
 
@@ -28,13 +29,50 @@ export default function PropertyCard({
   index = 0,
 }: PropertyCardProps) {
   const image = images?.[0];
+
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, []);
+
+  // Position du pointeur normalisée (0-1) sur la carte, utilisée pour le tilt.
+  const pointerX = useMotionValue(0.5);
+  const pointerY = useMotionValue(0.5);
+  const springConfig = { stiffness: 150, damping: 20, mass: 0.5 };
+  const rotateX = useSpring(useTransform(pointerY, [0, 1], [7, -7]), springConfig);
+  const rotateY = useSpring(useTransform(pointerX, [0, 1], [-7, 7]), springConfig);
+
+  const cardRef = useRef<HTMLElement>(null);
+
+  // Tilt 3D actif à la souris (survol) comme au doigt (appui) : seul le
+  // défilement de page n'est jamais entravé (pas de preventDefault ici).
+  const updateTilt = (event: ReactPointerEvent<HTMLElement>) => {
+    if (reducedMotion) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    pointerX.set((event.clientX - rect.left) / rect.width);
+    pointerY.set((event.clientY - rect.top) / rect.height);
+  };
+
+  const resetTilt = () => {
+    pointerX.set(0.5);
+    pointerY.set(0.5);
+  };
+
   return (
     <motion.article
+      ref={cardRef}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: Math.min(index, 6) * 0.06 }}
       whileHover={{ y: -6 }}
-      className="group overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200 transition-shadow duration-300 hover:shadow-xl hover:shadow-stone-900/10"
+      whileTap={{ scale: 0.98 }}
+      onPointerDown={updateTilt}
+      onPointerMove={updateTilt}
+      onPointerUp={resetTilt}
+      onPointerLeave={resetTilt}
+      onPointerCancel={resetTilt}
+      style={{ rotateX, rotateY, transformPerspective: 800 }}
+      className="group relative overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200 transition-shadow duration-300 hover:shadow-xl hover:shadow-stone-900/10"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-200">
         {image ? (

@@ -1,22 +1,56 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+const HERO_IMAGES = [
+  { src: "/hero1.webp", alt: "Villa de prestige avec piscine à débordement, vue sur les collines" },
+  { src: "/hero2.webp", alt: "Intérieur design d'une villa avec vue panoramique" },
+  { src: "/hero3.webp", alt: "Vue aérienne d'une résidence moderne avec piscine et jardin paysager" },
+];
+
+const SLIDE_INTERVAL_MS = 6000;
+
 export default function Hero() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    // Respecte la préférence utilisateur : pas de diaporama automatique si
+    // les animations sont réduites (la première image reste affichée).
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const interval = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % HERO_IMAGES.length);
+    }, SLIDE_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section
       id="accueil"
       className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-stone-950 py-28"
     >
-      {/*
-        Placeholder tant que les visuels IA ne sont pas intégrés.
-        Remplacer par: <Image src="/hero.jpg" alt="..." fill preload className="object-cover" />
-      */}
       <div className="absolute inset-0">
-        <div className="h-full w-full bg-gradient-to-br from-stone-900 via-stone-950 to-black" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(217,180,105,0.14),_transparent_60%)]" />
-        <div className="absolute inset-0 bg-black/30" />
+        {HERO_IMAGES.map((image, index) => (
+          <div
+            key={image.src}
+            className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+            style={{ opacity: index === activeIndex ? 1 : 0 }}
+          >
+            <Image
+              src={image.src}
+              alt={image.alt}
+              fill
+              preload={index === 0}
+              sizes="100vw"
+              className="object-cover"
+            />
+          </div>
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/85 via-stone-950/75 to-stone-950/95" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(217,180,105,0.16),_transparent_60%)]" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
