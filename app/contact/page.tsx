@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 };
 
 const SUBJECT_LABELS: Record<string, string> = {
-  visite: "Demande de visite",
   estimation: "Estimation de bien",
   information: "Renseignements généraux",
 };

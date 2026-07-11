@@ -15,6 +15,7 @@ import {
   deleteAnnonce,
   type AnnoncePayload,
 } from "@/lib/supabase/annonces";
+import { getVisitRequests } from "@/lib/supabase/visitRequests";
 
 interface Feedback {
   type: "success" | "error";
@@ -25,6 +26,7 @@ export default function AdminDashboardPage() {
   const router = useRouter();
 
   const [properties, setProperties] = useState<Property[]>([]);
+  const [pendingVisits, setPendingVisits] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -48,7 +50,8 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await refreshProperties();
+      const [, { requests }] = await Promise.all([refreshProperties(), getVisitRequests()]);
+      setPendingVisits(requests.filter((request) => request.status === "pending").length);
       setLoading(false);
     })();
   }, [refreshProperties]);
@@ -60,9 +63,18 @@ export default function AdminDashboardPage() {
   }, [feedback]);
 
   const handleNavigate = (nextView: AdminView) => {
-    // "Avis clients" est une vraie page séparée, pas une vue locale.
+    // "Avis clients", "Demandes de visite" et "Messages" sont de vraies
+    // pages séparées, pas des vues locales.
     if (nextView === "reviews") {
       router.push("/admin/reviews");
+      return;
+    }
+    if (nextView === "visitRequests") {
+      router.push("/admin/visit-requests");
+      return;
+    }
+    if (nextView === "messages") {
+      router.push("/admin/messages");
       return;
     }
     if (nextView !== "edit") setEditingProperty(null);
@@ -166,7 +178,7 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
 
-              <DashboardStats properties={properties} />
+              <DashboardStats properties={properties} pendingVisits={pendingVisits} />
 
               <PropertyTable
                 properties={properties.slice(0, 5)}
@@ -219,16 +231,6 @@ export default function AdminDashboardPage() {
                 isSubmitting={isSubmitting}
                 submitError={submitError}
               />
-            </div>
-          )}
-
-          {view === "messages" && (
-            <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-stone-100">
-              <h1 className="font-serif text-2xl text-stone-900">Messages</h1>
-              <p className="mt-2 text-sm text-stone-500">
-                La messagerie des prospects sera bientôt connectée au formulaire de
-                contact du site.
-              </p>
             </div>
           )}
 

@@ -103,7 +103,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             </div>
           </section>
 
-          <section className="mt-12">
+          <section id="planifier-visite" className="mt-12 scroll-mt-28">
             <h2 className="font-serif text-2xl text-stone-900">
               Planifier une visite
             </h2>

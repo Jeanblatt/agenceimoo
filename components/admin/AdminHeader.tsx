@@ -8,19 +8,19 @@ interface AdminHeaderProps {
   onMenuClick: () => void;
   userEmail: string;
   onSignOut: () => void;
+  notifications: string[];
 }
-
-const notifications = [
-  "Nouvelle demande de contact — Villa Moderne avec Piscine",
-  "Un bien vient d'être marqué comme vendu",
-  "3 nouveaux messages de prospects cette semaine",
-];
 
 function initialsOf(email: string) {
   return email.slice(0, 2).toUpperCase();
 }
 
-export default function AdminHeader({ onMenuClick, userEmail, onSignOut }: AdminHeaderProps) {
+export default function AdminHeader({
+  onMenuClick,
+  userEmail,
+  onSignOut,
+  notifications,
+}: AdminHeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -67,9 +67,11 @@ export default function AdminHeader({ onMenuClick, userEmail, onSignOut }: Admin
               />
               <path strokeLinecap="round" d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-semibold text-stone-950">
-              {notifications.length}
-            </span>
+            {notifications.length > 0 && (
+              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-semibold text-stone-950">
+                {notifications.length}
+              </span>
+            )}
           </button>
 
           <AnimatePresence>
@@ -84,16 +86,22 @@ export default function AdminHeader({ onMenuClick, userEmail, onSignOut }: Admin
                 <p className="px-3 py-2 text-xs font-medium uppercase tracking-wider text-stone-400">
                   Notifications
                 </p>
-                <ul className="space-y-1">
-                  {notifications.map((notification) => (
-                    <li
-                      key={notification}
-                      className="rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-50"
-                    >
-                      {notification}
-                    </li>
-                  ))}
-                </ul>
+                {notifications.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-stone-500">
+                    Aucune demande de visite en attente.
+                  </p>
+                ) : (
+                  <ul className="space-y-1">
+                    {notifications.map((notification, index) => (
+                      <li
+                        key={index}
+                        className="rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-50"
+                      >
+                        {notification}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

@@ -10,6 +10,7 @@ export type AdminView =
   | "add"
   | "edit"
   | "reviews"
+  | "visitRequests"
   | "messages"
   | "settings";
 
@@ -62,6 +63,17 @@ const navItems: NavItem[] = [
         strokeLinejoin="round"
         d="m12 2.5 2.9 6.3 6.6.7-5 4.6 1.4 6.6L12 17.6l-5.9 3.1 1.4-6.6-5-4.6 6.6-.7L12 2.5Z"
       />
+    ),
+  },
+  {
+    view: "visitRequests",
+    label: "Demandes de visite",
+    icon: (
+      <>
+        <rect x="3.5" y="5" width="17" height="15" rx="2" />
+        <path strokeLinecap="round" d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="m8.5 14.5 2.2 2.2 4.3-4.3" />
+      </>
     ),
   },
   {

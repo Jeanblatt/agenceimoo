@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
+import { createContactMessage } from "@/lib/supabase/contactMessages";
 
 const SUBJECTS = [
-  "Demande de visite",
   "Renseignements généraux",
   "Estimation de bien",
   "Vendre mon bien",
@@ -74,7 +74,7 @@ export default function ContactForm({
     message: defaultMessage ?? "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [status, setStatus] = useState<"idle" | "submitting" | "success">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
   const updateField = (field: keyof FormValues, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -88,8 +88,13 @@ export default function ContactForm({
     if (Object.keys(validation).length > 0) return;
 
     setStatus("submitting");
-    // Pas de backend pour le moment : on simule l'envoi côté frontend.
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    const { error } = await createContactMessage(values);
+
+    if (error) {
+      setStatus("error");
+      return;
+    }
+
     setStatus("success");
   };
 
@@ -222,6 +227,12 @@ export default function ContactForm({
         />
         {errors.message && <p className="mt-1.5 text-xs text-red-600">{errors.message}</p>}
       </div>
+
+      {status === "error" && (
+        <p className="text-sm text-red-600">
+          Une erreur est survenue lors de l&apos;envoi de votre message. Merci de réessayer.
+        </p>
+      )}
 
       <button
         type="submit"

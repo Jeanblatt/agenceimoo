@@ -6,6 +6,7 @@ import type { Property } from "@/data/properties";
 
 interface DashboardStatsProps {
   properties: Property[];
+  pendingVisits: number;
 }
 
 interface Stat {
@@ -14,12 +15,10 @@ interface Stat {
   icon: ReactNode;
 }
 
-export default function DashboardStats({ properties }: DashboardStatsProps) {
+export default function DashboardStats({ properties, pendingVisits }: DashboardStatsProps) {
   const total = properties.length;
   const available = properties.filter((p) => p.status === "Disponible").length;
   const sold = properties.filter((p) => p.status === "Vendu").length;
-  // Donnée simulée en attendant la connexion au vrai formulaire de contact.
-  const contactRequests = 12;
 
   const stats: Stat[] = [
     {
@@ -53,14 +52,13 @@ export default function DashboardStats({ properties }: DashboardStatsProps) {
       ),
     },
     {
-      label: "Demandes de contact",
-      value: contactRequests,
+      label: "Visites en attente",
+      value: pendingVisits,
       icon: (
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4 6h16v12H4V6Zm0 0 8 7 8-7"
-        />
+        <>
+          <rect x="3.5" y="5" width="17" height="15" rx="2" />
+          <path strokeLinecap="round" d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
+        </>
       ),
     },
   ];

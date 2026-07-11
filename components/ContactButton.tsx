@@ -10,10 +10,17 @@ export default function ContactButton({ propertyTitle }: ContactButtonProps) {
     ? `&property=${encodeURIComponent(propertyTitle)}`
     : "";
 
+  // Sur une fiche bien, "Demander une visite" doit remplir le vrai
+  // formulaire (connecté à Supabase, section #planifier-visite plus bas sur
+  // la même page) plutôt que le formulaire de contact générique — ce
+  // dernier ne propose d'ailleurs plus "Demande de visite" comme sujet,
+  // cette action est exclusivement gérée par ce bouton.
+  const visitHref = propertyTitle ? "#planifier-visite" : "/contact";
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row">
       <Link
-        href={`/contact?subject=visite${propertyParam}`}
+        href={visitHref}
         className="flex flex-1 items-center justify-center rounded-full bg-amber-500 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-950 transition-transform hover:scale-[1.02]"
       >
         Demander une visite
