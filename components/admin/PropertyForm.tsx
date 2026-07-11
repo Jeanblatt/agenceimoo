@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import type { AdminProperty, AdminPropertyStatus } from "@/data/adminProperties";
-import type { PropertyType } from "@/data/properties";
+import type { Property, PropertyType } from "@/data/properties";
+import type { AnnoncePayload } from "@/lib/supabase/annonces";
 
 const TYPES: PropertyType[] = [
   "Villa",
@@ -12,35 +12,25 @@ const TYPES: PropertyType[] = [
   "Maison traditionnelle",
   "Local commercial",
 ];
-const STATUSES: AdminPropertyStatus[] = ["Disponible", "Réservé", "Vendu"];
-
-export interface PropertyFormValues {
-  title: string;
-  description: string;
-  location: string;
-  type: PropertyType;
-  price: number;
-  surface: number;
-  bedrooms: number;
-  status: AdminPropertyStatus;
-  image: string;
-}
+const STATUSES = ["Disponible", "Réservé", "Vendu"] as const;
 
 interface PropertyFormProps {
-  initialValues?: AdminProperty;
-  onSubmit: (values: PropertyFormValues) => void;
+  initialValues?: Property;
+  onSubmit: (values: AnnoncePayload) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 }
 
 interface RawValues {
   title: string;
   description: string;
   location: string;
-  type: PropertyType;
+  type: string;
   price: string;
   surface: string;
   bedrooms: string;
-  status: AdminPropertyStatus;
+  status: string;
 }
 
 type FormErrors = Partial<Record<keyof RawValues, string>>;
@@ -91,6 +81,8 @@ export default function PropertyForm({
   initialValues,
   onSubmit,
   onCancel,
+  isSubmitting = false,
+  submitError = null,
 }: PropertyFormProps) {
   const [values, setValues] = useState<RawValues>({
     title: initialValues?.title ?? "",
@@ -98,13 +90,13 @@ export default function PropertyForm({
     location: initialValues?.location ?? "",
     type: initialValues?.type ?? "Appartement",
     price: initialValues ? String(initialValues.price) : "",
-    surface: initialValues ? String(initialValues.surface) : "",
+    surface: initialValues ? String(initialValues.area) : "",
     bedrooms: initialValues ? String(initialValues.bedrooms) : "",
     status: initialValues?.status ?? "Disponible",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [images, setImages] = useState<string[]>(
-    initialValues ? [initialValues.image] : []
+    initialValues?.images ? [initialValues.images[0]] : []
   );
 
   const updateField = (field: keyof RawValues, value: string) => {
@@ -325,17 +317,29 @@ export default function PropertyForm({
           )}
         </div>
 
+        {submitError && (
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            {submitError}
+          </p>
+        )}
+
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <button
             type="submit"
-            className="rounded-full bg-amber-500 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-950 transition-transform hover:scale-[1.02]"
+            disabled={isSubmitting}
+            className="rounded-full bg-amber-500 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-950 transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {initialValues ? "Enregistrer les modifications" : "Ajouter le bien"}
+            {isSubmitting
+              ? "Enregistrement..."
+              : initialValues
+                ? "Enregistrer les modifications"
+                : "Ajouter le bien"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-stone-300 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-700 transition-colors hover:border-stone-400"
+            disabled={isSubmitting}
+            className="rounded-full border border-stone-300 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-700 transition-colors hover:border-stone-400 disabled:cursor-not-allowed disabled:opacity-70"
           >
             Annuler
           </button>

@@ -17,9 +17,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
               Navigation
-            </h4>
+            </h3>
             <ul className="mt-4 space-y-3 text-sm">
               <li>
                 <Link href="/#accueil" className="transition-colors hover:text-amber-500">
@@ -45,9 +45,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
               Contact
-            </h4>
+            </h3>
             <ul className="mt-4 space-y-3 text-sm text-stone-400">
               <li>
                 {AGENCY.address.streetAddress}, {AGENCY.address.postalCode}{" "}
@@ -59,9 +59,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
               Newsletter
-            </h4>
+            </h3>
             <p className="mt-4 text-sm text-stone-400">
               Recevez nos nouvelles offres en avant-première.
             </p>

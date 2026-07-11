@@ -6,6 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
+  userEmail: string;
+  onSignOut: () => void;
 }
 
 const notifications = [
@@ -14,7 +16,11 @@ const notifications = [
   "3 nouveaux messages de prospects cette semaine",
 ];
 
-export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
+function initialsOf(email: string) {
+  return email.slice(0, 2).toUpperCase();
+}
+
+export default function AdminHeader({ onMenuClick, userEmail, onSignOut }: AdminHeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -103,11 +109,13 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-stone-100"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-900 text-xs font-semibold text-white">
-              AB
+              {initialsOf(userEmail)}
             </span>
             <span className="hidden text-left sm:block">
-              <span className="block text-sm font-medium text-stone-900">Amira Ben Salah</span>
-              <span className="block text-xs text-stone-500">Responsable des ventes</span>
+              <span className="block max-w-[160px] truncate text-sm font-medium text-stone-900">
+                {userEmail}
+              </span>
+              <span className="block text-xs text-stone-500">Administrateur</span>
             </span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 text-stone-400">
               <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
@@ -129,6 +137,13 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 >
                   ← Retour au site
                 </Link>
+                <button
+                  type="button"
+                  onClick={onSignOut}
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                >
+                  Se déconnecter
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

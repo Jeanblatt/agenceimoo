@@ -1,16 +1,6 @@
-"use client";
-
-import { useMemo, useState } from "react";
-import SearchFilter, { type SearchFilters } from "@/components/SearchFilter";
+import Link from "next/link";
 import PropertyGrid from "@/components/PropertyGrid";
 import type { Property } from "@/data/properties";
-
-const emptyFilters: SearchFilters = {
-  city: "",
-  type: "",
-  minPrice: "",
-  maxPrice: "",
-};
 
 const features = [
   {
@@ -36,28 +26,8 @@ interface HomePropertiesProps {
 }
 
 export default function HomeProperties({ properties, error }: HomePropertiesProps) {
-  const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
-
-  const filteredProperties = useMemo(() => {
-    const city = filters.city.trim().toLowerCase();
-    const min = filters.minPrice === "" ? null : Number(filters.minPrice);
-    const max = filters.maxPrice === "" ? null : Number(filters.maxPrice);
-
-    return properties.filter((property) => {
-      const matchesCity =
-        city === "" || property.location.toLowerCase().includes(city);
-      const matchesType = filters.type === "" || property.type === filters.type;
-      const matchesMin = min === null || property.price >= min;
-      const matchesMax = max === null || property.price <= max;
-
-      return matchesCity && matchesType && matchesMin && matchesMax;
-    });
-  }, [filters, properties]);
-
   return (
     <>
-      <SearchFilter onSearch={setFilters} />
-
       <section id="services" className="bg-stone-50 py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
@@ -98,17 +68,17 @@ export default function HomeProperties({ properties, error }: HomePropertiesProp
                 Nos biens d&apos;exception
               </h2>
               <p className="mt-2 text-sm text-stone-500">
-                {filteredProperties.length} bien
-                {filteredProperties.length !== 1 ? "s" : ""} trouvé
-                {filteredProperties.length !== 1 ? "s" : ""}
+                {properties.length} bien
+                {properties.length !== 1 ? "s" : ""} trouvé
+                {properties.length !== 1 ? "s" : ""}
               </p>
             </div>
-            <a
-              href="#contact"
+            <Link
+              href="/biens"
               className="text-sm font-medium uppercase tracking-wide text-stone-900 underline underline-offset-4 transition-colors hover:text-amber-600"
             >
               Voir tous les biens
-            </a>
+            </Link>
           </div>
 
           <div className="mt-14">
@@ -117,7 +87,7 @@ export default function HomeProperties({ properties, error }: HomePropertiesProp
                 Une erreur est survenue lors du chargement des annonces. Merci de réessayer plus tard.
               </p>
             ) : (
-              <PropertyGrid properties={filteredProperties} />
+              <PropertyGrid properties={properties} />
             )}
           </div>
         </div>

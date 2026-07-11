@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import type { AdminProperty } from "@/data/adminProperties";
+import type { Property } from "@/data/properties";
 
 interface DashboardStatsProps {
-  properties: AdminProperty[];
+  properties: Property[];
 }
 
 interface Stat {

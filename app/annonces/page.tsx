@@ -2,10 +2,32 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import PropertyGrid from "@/components/PropertyGrid";
-import { getAnnonces } from "@/lib/supabase/annonces";
+import { getAnnonces, searchAnnonces } from "@/lib/supabase/annonces";
 
-export default async function AnnoncesPage() {
-  const { properties, error } = await getAnnonces();
+interface AnnoncesPageProps {
+  searchParams: Promise<{
+    localisation?: string;
+    type?: string;
+    prixMin?: string;
+    prixMax?: string;
+    surfaceMin?: string;
+  }>;
+}
+
+export default async function AnnoncesPage({ searchParams }: AnnoncesPageProps) {
+  const params = await searchParams;
+  const hasFilters =
+    !!params.localisation || !!params.type || !!params.prixMin || !!params.prixMax || !!params.surfaceMin;
+
+  const { properties, error } = hasFilters
+    ? await searchAnnonces({
+        localisation: params.localisation,
+        type: params.type,
+        minPrice: params.prixMin ? Number(params.prixMin) : undefined,
+        maxPrice: params.prixMax ? Number(params.prixMax) : undefined,
+        minSurface: params.surfaceMin ? Number(params.surfaceMin) : undefined,
+      })
+    : await getAnnonces();
 
   return (
     <>
