@@ -116,7 +116,7 @@ export default function ReviewsTable({ reviews, onApprove, onDelete }: ReviewsTa
                         type="button"
                         onClick={() => onApprove(review.id)}
                         aria-label="Valider l'avis"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600"
                       >
                         <Check className="h-4 w-4" strokeWidth={2} />
                       </button>
@@ -130,14 +130,14 @@ export default function ReviewsTable({ reviews, onApprove, onDelete }: ReviewsTa
                             onDelete(review.id);
                             setConfirmingId(null);
                           }}
-                          className="whitespace-nowrap rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700"
+                          className="whitespace-nowrap rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-red-700"
                         >
                           Confirmer
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmingId(null)}
-                          className="rounded-lg px-2 py-1.5 text-xs text-stone-500 hover:bg-stone-100"
+                          className="rounded-lg px-2.5 py-2 text-xs text-stone-500 hover:bg-stone-100"
                         >
                           Annuler
                         </button>
@@ -147,7 +147,7 @@ export default function ReviewsTable({ reviews, onApprove, onDelete }: ReviewsTa
                         type="button"
                         onClick={() => setConfirmingId(review.id)}
                         aria-label="Supprimer l'avis"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                       </button>

@@ -3,33 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, MapPin, Share2 } from "lucide-react";
+import { MapPin, Share2 } from "lucide-react";
 import type { Property } from "@/data/properties";
 import { formatPrice } from "@/utils/formatPrice";
+import { getPropertyStatusLabel, getTransactionLabel } from "@/config/catalog";
 import ContactButton from "@/components/ContactButton";
+import FavoriteButton from "@/components/FavoriteButton";
+import IconButton from "@/components/ui/IconButton";
+import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 
 interface PropertyDetailHeroProps {
   property: Property;
-}
-
-function PlaceholderTile() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-200 via-stone-100 to-stone-300">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1}
-        className="h-16 w-16 text-stone-400"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5M9 21v-6h6v6"
-        />
-      </svg>
-    </div>
-  );
 }
 
 // Reçoit le bien déjà normalisé (via getAnnonceById) en prop — aucune
@@ -38,7 +22,6 @@ function PlaceholderTile() {
 export default function PropertyDetailHero({ property }: PropertyDetailHeroProps) {
   const images = property.images ?? [];
   const [activeIndex, setActiveIndex] = useState(0);
-  const [favorite, setFavorite] = useState(false);
   const activeImage = images[activeIndex];
 
   const handleShare = async () => {
@@ -65,7 +48,7 @@ export default function PropertyDetailHero({ property }: PropertyDetailHeroProps
   return (
     <section>
       {/* Galerie */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-stone-200">
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-card bg-stone-200">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeIndex}
@@ -77,54 +60,45 @@ export default function PropertyDetailHero({ property }: PropertyDetailHeroProps
           >
             {activeImage ? (
               <Image
-                src={activeImage}
-                alt={`${property.title} — photo ${activeIndex + 1}`}
+                src={activeImage.url}
+                alt={activeImage.alt || `${property.title} — photo ${activeIndex + 1}`}
                 fill
                 preload
                 sizes="(min-width: 1024px) 900px, 100vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
-              <PlaceholderTile />
+              <ImagePlaceholder />
             )}
           </motion.div>
         </AnimatePresence>
 
-        {property.featured && (
-          <span className="absolute left-4 top-4 z-10 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-stone-950">
-            Premium
-          </span>
-        )}
+        <div className="absolute left-4 top-4 z-10 flex flex-col items-start gap-2">
+          {property.featured && (
+            <span className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-stone-950">
+              Premium
+            </span>
+          )}
+          {property.status === "reserved" && (
+            <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-wider text-charcoal ring-1 ring-border">
+              {getPropertyStatusLabel(property.status)}
+            </span>
+          )}
+        </div>
 
         <div className="absolute right-4 top-4 z-10 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setFavorite((current) => !current)}
-            aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-            aria-pressed={favorite}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-stone-700 shadow-md transition-colors hover:bg-white"
-          >
-            <Heart className={`h-4 w-4 ${favorite ? "fill-amber-500 text-amber-500" : ""}`} />
-          </button>
-          <button
-            type="button"
-            onClick={handleShare}
-            aria-label="Partager cette annonce"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-stone-700 shadow-md transition-colors hover:bg-white"
-          >
+          <FavoriteButton propertyId={property.id} />
+          <IconButton onClick={handleShare} aria-label="Partager cette annonce">
             <Share2 className="h-4 w-4" />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       {images.length > 1 && (
-        <div
-          className="mt-4 grid gap-3"
-          style={{ gridTemplateColumns: `repeat(${Math.min(images.length, 6)}, minmax(0, 1fr))` }}
-        >
-          {images.map((src, index) => (
+        <div className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-6">
+          {images.map((image, index) => (
             <button
-              key={src}
+              key={image.id}
               type="button"
               onClick={() => setActiveIndex(index)}
               aria-label={`Voir la photo ${index + 1}`}
@@ -136,8 +110,8 @@ export default function PropertyDetailHero({ property }: PropertyDetailHeroProps
               }`}
             >
               <Image
-                src={src}
-                alt={`${property.title} — miniature ${index + 1}`}
+                src={image.url}
+                alt={image.alt || `${property.title} — miniature ${index + 1}`}
                 fill
                 sizes="150px"
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -150,11 +124,18 @@ export default function PropertyDetailHero({ property }: PropertyDetailHeroProps
       {/* Informations */}
       <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <span className="inline-block rounded-full bg-stone-950 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-            {property.type}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-block rounded-full bg-ink px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
+              {property.type}
+            </span>
+            {property.transaction && (
+              <span className="inline-block rounded-full bg-ink px-3 py-1 text-xs font-medium uppercase tracking-wider text-white">
+                {getTransactionLabel(property.transaction)}
+              </span>
+            )}
+          </div>
 
-          <h1 className="mt-4 font-serif text-3xl text-stone-900 sm:text-4xl">
+          <h1 className="mt-4 font-serif text-3xl text-charcoal sm:text-4xl">
             {property.title}
           </h1>
 
@@ -165,7 +146,7 @@ export default function PropertyDetailHero({ property }: PropertyDetailHeroProps
         </div>
 
         <div className="lg:text-right">
-          <p className="font-serif text-3xl text-stone-900 sm:text-4xl">
+          <p className="font-serif text-3xl text-charcoal sm:text-4xl">
             {formatPrice(property.price)}
           </p>
           <p className="mt-1 text-sm text-stone-500">

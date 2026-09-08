@@ -17,8 +17,8 @@ interface Stat {
 
 export default function DashboardStats({ properties, pendingVisits }: DashboardStatsProps) {
   const total = properties.length;
-  const available = properties.filter((p) => p.status === "Disponible").length;
-  const sold = properties.filter((p) => p.status === "Vendu").length;
+  const available = properties.filter((p) => p.status === "available").length;
+  const sold = properties.filter((p) => p.status === "sold").length;
 
   const stats: Stat[] = [
     {

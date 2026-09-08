@@ -1,4 +1,5 @@
 import PropertyCard from "@/components/PropertyCard";
+import Button from "@/components/ui/Button";
 import type { Property } from "@/data/properties";
 
 interface PropertyGridProps {
@@ -8,9 +9,14 @@ interface PropertyGridProps {
 export default function PropertyGrid({ properties }: PropertyGridProps) {
   if (properties.length === 0) {
     return (
-      <p className="py-16 text-center text-sm text-stone-500">
-        Aucun bien ne correspond à votre recherche pour le moment.
-      </p>
+      <div className="py-16 text-center">
+        <p className="text-sm text-stone-500">
+          Aucun bien ne correspond à votre recherche pour le moment.
+        </p>
+        <Button href="/biens" variant="ghost" className="mt-4">
+          Réinitialiser la recherche
+        </Button>
+      </div>
     );
   }
 

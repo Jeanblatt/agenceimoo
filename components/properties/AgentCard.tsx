@@ -1,29 +1,26 @@
 import Image from "next/image";
 import { Mail, MessageCircle, Phone, Star } from "lucide-react";
 import type { Agent } from "@/data/agent";
+import { agency } from "@/config/agency";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import { initialsOf } from "@/lib/initials";
 
 interface AgentCardProps {
   agent: Agent;
 }
 
-function initialsOf(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
-
 export default function AgentCard({ agent }: AgentCardProps) {
-  const whatsappHref = `https://wa.me/${agent.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+  // Numéro WhatsApp dédié de l'agence (peut différer du téléphone affiché
+  // ci-dessous) — corrigé en V3.3.G, voir agency.whatsapp dans config/agency.ts.
+  const whatsappHref = `https://wa.me/${agency.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
     `Bonjour, je souhaite avoir des informations sur un bien.`
   )}`;
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl bg-stone-50 p-6 ring-1 ring-stone-100 sm:flex-row sm:items-center sm:p-8">
+    <Card tone="muted" ring="subtle" padding="sm" className="flex flex-col gap-6 sm:flex-row sm:items-center sm:p-8">
       <div className="flex items-center gap-4 sm:flex-col sm:items-center sm:text-center">
-        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-stone-950 sm:h-20 sm:w-20">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-ink sm:h-20 sm:w-20">
           {agent.photo ? (
             <Image
               src={agent.photo}
@@ -81,24 +78,24 @@ export default function AgentCard({ agent }: AgentCardProps) {
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <a
-            href={`tel:${agent.phone}`}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold uppercase tracking-wider text-stone-950 transition-transform hover:scale-[1.02]"
-          >
+          <Button href={`tel:${agent.phone}`} size="compact" className="flex-1">
             <Phone className="h-4 w-4" strokeWidth={2} />
             Appeler
-          </a>
-          <a
+          </Button>
+          <Button
             href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-1 items-center justify-center gap-2 rounded-full border border-stone-300 px-6 py-3 text-sm font-semibold uppercase tracking-wider text-stone-900 transition-colors hover:border-amber-500 hover:text-amber-600"
+            variant="outline"
+            tone="onLight"
+            size="compact"
+            className="flex-1"
           >
             <MessageCircle className="h-4 w-4" strokeWidth={2} />
             WhatsApp
-          </a>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

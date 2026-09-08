@@ -6,6 +6,8 @@ import AdminShell from "@/components/admin/AdminShell";
 import DashboardStats from "@/components/admin/DashboardStats";
 import PropertyTable from "@/components/admin/PropertyTable";
 import PropertyForm from "@/components/admin/PropertyForm";
+import AgencySettingsForm from "@/components/admin/AgencySettingsForm";
+import AgencyContentForm from "@/components/admin/AgencyContentForm";
 import type { Property } from "@/data/properties";
 import type { AdminView } from "@/components/admin/AdminSidebar";
 import {
@@ -33,8 +35,6 @@ export default function AdminDashboardPage() {
   const [view, setView] = useState<AdminView>("dashboard");
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
   const refreshProperties = useCallback(async () => {
@@ -78,55 +78,32 @@ export default function AdminDashboardPage() {
       return;
     }
     if (nextView !== "edit") setEditingProperty(null);
-    setSubmitError(null);
     setView(nextView);
   };
 
   const handleEdit = (property: Property) => {
     setEditingProperty(property);
-    setSubmitError(null);
     setView("edit");
   };
 
-  const handleCreate = async (values: AnnoncePayload) => {
-    setIsSubmitting(true);
-    setSubmitError(null);
+  // Ces deux fonctions se contentent de retourner le résultat brut de
+  // insertAnnonce/updateAnnonce ({ property, error }) : PropertyForm attend
+  // l'annonce créée/modifiée pour, en création, uploader ensuite les photos
+  // en attente vers Storage. Le rafraîchissement de la liste et le feedback
+  // n'interviennent qu'une fois tout terminé, via handleSaved.
+  const handleCreate = (values: AnnoncePayload) => insertAnnonce(values);
 
-    const { error } = await insertAnnonce(values);
-    setIsSubmitting(false);
-
-    if (error) {
-      // Erreur Supabase complète, pour le diagnostic.
-      console.error("Échec de l'ajout du bien :", error);
-      setSubmitError(
-        `L'ajout a échoué : ${error}. Vérifiez que la table "annonces" autorise l'insertion (policy RLS).`
-      );
-      return;
+  const handleUpdate = (values: AnnoncePayload) => {
+    if (!editingProperty) {
+      return Promise.resolve({ property: null, error: "Aucun bien sélectionné." });
     }
-
-    await refreshProperties();
-    router.refresh();
-    setFeedback({ type: "success", message: "Le bien a été ajouté avec succès." });
-    setView("properties");
+    return updateAnnonce(editingProperty.id, values);
   };
 
-  const handleUpdate = async (values: AnnoncePayload) => {
-    if (!editingProperty) return;
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    const { error } = await updateAnnonce(editingProperty.id, values);
-    setIsSubmitting(false);
-
-    if (error) {
-      console.error("Échec de la modification du bien :", error);
-      setSubmitError(`La modification a échoué : ${error}.`);
-      return;
-    }
-
+  const handleSaved = async (message: string) => {
     await refreshProperties();
     router.refresh();
-    setFeedback({ type: "success", message: "Le bien a été mis à jour avec succès." });
+    setFeedback({ type: "success", message });
     setEditingProperty(null);
     setView("properties");
   };
@@ -209,12 +186,7 @@ export default function AdminDashboardPage() {
           {view === "add" && (
             <div className="space-y-6">
               <h1 className="font-serif text-2xl text-stone-900">Ajouter un bien</h1>
-              <PropertyForm
-                onSubmit={handleCreate}
-                onCancel={() => setView("properties")}
-                isSubmitting={isSubmitting}
-                submitError={submitError}
-              />
+              <PropertyForm onSubmit={handleCreate} onSaved={handleSaved} onCancel={() => setView("properties")} />
             </div>
           )}
 
@@ -224,25 +196,18 @@ export default function AdminDashboardPage() {
               <PropertyForm
                 initialValues={editingProperty}
                 onSubmit={handleUpdate}
+                onSaved={handleSaved}
                 onCancel={() => {
                   setEditingProperty(null);
                   setView("properties");
                 }}
-                isSubmitting={isSubmitting}
-                submitError={submitError}
               />
             </div>
           )}
 
-          {view === "settings" && (
-            <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-stone-100">
-              <h1 className="font-serif text-2xl text-stone-900">Paramètres</h1>
-              <p className="mt-2 text-sm text-stone-500">
-                Les paramètres de l&apos;agence seront disponibles dans une prochaine
-                version.
-              </p>
-            </div>
-          )}
+          {view === "content" && <AgencyContentForm />}
+
+          {view === "settings" && <AgencySettingsForm />}
         </>
       )}
     </AdminShell>

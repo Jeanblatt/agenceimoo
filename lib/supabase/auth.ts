@@ -10,6 +10,23 @@ export async function signIn(
   return { error: error?.message ?? null };
 }
 
+// Inscription client (espace /compte). Le trigger "on_auth_user_created"
+// crée automatiquement la ligne "profiles" (role "client") côté Supabase,
+// à partir de full_name/phone passés ici en user_metadata.
+export async function signUp(
+  email: string,
+  password: string,
+  fullName: string,
+  phone: string
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName, phone } },
+  });
+  return { error: error?.message ?? null };
+}
+
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
@@ -29,10 +46,10 @@ export function onAuthStateChange(callback: (session: Session | null) => void): 
 
 /**
  * `undefined` = vérification de session en cours, `null` = non connecté.
- * Partagé par toutes les pages /admin/* pour éviter de dupliquer la logique
- * de session sur chaque page.
+ * Générique : partagé par les pages /admin/* et /compte/* pour éviter de
+ * dupliquer la logique de session.
  */
-export function useAdminSession() {
+export function useSession() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
   useEffect(() => {

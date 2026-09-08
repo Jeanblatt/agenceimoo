@@ -1,71 +1,33 @@
 import Link from "next/link";
 import PropertyGrid from "@/components/PropertyGrid";
+import WhyUs from "@/components/WhyUs";
 import type { Property } from "@/data/properties";
-
-const features = [
-  {
-    title: "Expertise locale",
-    description:
-      "Une connaissance fine des marchés les plus prisés de Tunisie, du Grand Tunis à la côte de Hammamet et Sousse.",
-  },
-  {
-    title: "Accompagnement sur mesure",
-    description:
-      "Un conseiller dédié à chaque étape, de la première visite jusqu'à la signature chez le notaire.",
-  },
-  {
-    title: "Réseau international",
-    description:
-      "Une visibilité auprès d'une clientèle exigeante, en Tunisie comme à l'international.",
-  },
-];
+import type { AgencyContent } from "@/lib/supabase/agencyContent";
+import { content } from "@/config/content";
+import Section from "@/components/ui/Section";
+import Container from "@/components/ui/Container";
 
 interface HomePropertiesProps {
   properties: Property[];
   error: string | null;
+  /** Résolu par app/page.tsx via resolveAgencyContent() (V3.3.W.5) — plus de "Horizon" figé ni de agencyShortName ici (l'eyebrow est déjà résolu en amont). */
+  whyUs: AgencyContent["whyUs"];
 }
 
-export default function HomeProperties({ properties, error }: HomePropertiesProps) {
+export default function HomeProperties({ properties, error, whyUs }: HomePropertiesProps) {
   return (
     <>
-      <section id="services" className="bg-stone-50 py-24">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm uppercase tracking-[0.3em] text-amber-600">
-              Pourquoi Horizon
-            </p>
-            <h2 className="mt-3 font-serif text-3xl text-stone-900 sm:text-4xl">
-              Une approche sur mesure de l&apos;immobilier de prestige
-            </h2>
-          </div>
+      <WhyUs whyUs={whyUs} />
 
-          <div className="mt-16 grid gap-10 sm:grid-cols-3">
-            {features.map((feature, index) => (
-              <div key={feature.title} className="text-center">
-                <span className="font-serif text-3xl text-amber-500">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h3 className="mt-4 font-serif text-xl text-stone-900">
-                  {feature.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-stone-600">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="biens" className="bg-white py-24">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <Section as="section" id="biens">
+        <Container>
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-amber-600">
-                Sélection
+                {content.home.propertiesEyebrow}
               </p>
-              <h2 className="mt-3 font-serif text-3xl text-stone-900 sm:text-4xl">
-                Nos biens d&apos;exception
+              <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">
+                {content.home.propertiesTitle}
               </h2>
               <p className="mt-2 text-sm text-stone-500">
                 {properties.length} bien
@@ -73,9 +35,12 @@ export default function HomeProperties({ properties, error }: HomePropertiesProp
                 {properties.length !== 1 ? "s" : ""}
               </p>
             </div>
+            {/* inline-block + py-3/-my-3 : zone tactile ~44px (V3.3.Q.1.8)
+                sans changer la position visuelle du lien (alignement
+                items-end du conteneur parent inchangé). */}
             <Link
               href="/biens"
-              className="text-sm font-medium uppercase tracking-wide text-stone-900 underline underline-offset-4 transition-colors hover:text-amber-600"
+              className="inline-block -my-3 py-3 text-sm font-medium uppercase tracking-wide text-charcoal underline underline-offset-4 transition-colors hover:text-amber-600"
             >
               Voir tous les biens
             </Link>
@@ -90,8 +55,8 @@ export default function HomeProperties({ properties, error }: HomePropertiesProp
               <PropertyGrid properties={properties} />
             )}
           </div>
-        </div>
-      </section>
+        </Container>
+      </Section>
     </>
   );
 }

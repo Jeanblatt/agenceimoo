@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { createNotification } from "@/lib/supabase/notifications";
 
 // Le bien lié est stocké dans la table "annonces" (pas "properties" —
 // c'est le nom réellement utilisé dans ce projet, voir lib/supabase/annonces.ts).
@@ -11,10 +12,12 @@ export interface VisitRequestPayload {
   email: string;
   visitDate: string;
   message: string;
+  userId?: string;
 }
 
 export interface VisitRequest {
   id: string;
+  userId: string | null;
   propertyId: string;
   clientName: string;
   phone: string;
@@ -29,6 +32,7 @@ export interface VisitRequest {
 
 interface VisitRequestRow {
   id: number;
+  user_id: string | null;
   property_id: number;
   client_name: string;
   phone: string;
@@ -44,6 +48,7 @@ interface VisitRequestRow {
 function mapVisitRequestRow(row: VisitRequestRow): VisitRequest {
   return {
     id: String(row.id),
+    userId: row.user_id,
     propertyId: String(row.property_id),
     clientName: row.client_name,
     phone: row.phone,
@@ -55,6 +60,11 @@ function mapVisitRequestRow(row: VisitRequestRow): VisitRequest {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function formatVisitDateLong(value: string) {
+  const date = value.length <= 10 ? new Date(`${value}T00:00:00`) : new Date(value);
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 // Insertion publique (formulaire "Demander une visite" sur la fiche bien).
@@ -77,6 +87,7 @@ export async function createVisitRequest(
     visit_date: payload.visitDate,
     message: payload.message || null,
     status: "pending",
+    user_id: payload.userId ?? null,
   });
 
   if (error) {
@@ -84,6 +95,35 @@ export async function createVisitRequest(
   }
 
   return { error: null };
+}
+
+// Lecture réservée au client propriétaire de la demande (rôle authenticated,
+// policy RLS "visit_requests: select own") — utilisée par l'espace /compte.
+// Le filtre user_id est explicite ici (la RLS le garantit de toute façon)
+// pour documenter l'intention, comme getApprovedReviews() le fait pour les avis.
+export async function getMyVisitRequests(): Promise<{
+  requests: VisitRequest[];
+  error: string | null;
+}> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { requests: [], error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("visit_requests")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { requests: [], error: error.message };
+  }
+
+  return { requests: (data as VisitRequestRow[]).map(mapVisitRequestRow), error: null };
 }
 
 // Lecture réservée à l'admin (rôle authenticated) — voir la policy RLS
@@ -129,6 +169,10 @@ export async function getVisitRequestById(id: string): Promise<{
   };
 }
 
+// Après un changement de statut par l'admin, notifie le client propriétaire
+// de la demande (si connecté) pour "confirmed"/"cancelled". L'échec éventuel
+// de la notification n'est pas remonté à l'appelant : le changement de
+// statut lui-même a déjà réussi à ce stade.
 export async function updateVisitRequestStatus(
   id: string,
   status: VisitRequestStatus
@@ -138,14 +182,29 @@ export async function updateVisitRequestStatus(
     return { error: "Identifiant de demande invalide." };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("visit_requests")
     .update({ status })
-    .eq("id", numericId);
+    .eq("id", numericId)
+    .select()
+    .single();
 
   if (error) {
     console.error("Erreur Supabase (updateVisitRequestStatus):", error);
     return { error: error.message };
+  }
+
+  const row = data as VisitRequestRow;
+  if (row.user_id && (status === "confirmed" || status === "cancelled")) {
+    await createNotification({
+      userId: row.user_id,
+      title: status === "confirmed" ? "Visite confirmée" : "Visite annulée",
+      message:
+        status === "confirmed"
+          ? `Votre demande de visite pour le bien #${row.property_id} a été confirmée pour le ${formatVisitDateLong(row.visit_date)}.`
+          : `Votre demande de visite pour le bien #${row.property_id} a été annulée par l'agence.`,
+      type: status === "confirmed" ? "visit_confirmed" : "visit_cancelled",
+    });
   }
 
   return { error: null };

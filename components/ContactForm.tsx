@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { motion } from "framer-motion";
+import { useState, type SubmitEvent } from "react";
 import { createContactMessage } from "@/lib/supabase/contactMessages";
+import { useSession } from "@/lib/supabase/auth";
+import FormField, { formInputClasses } from "@/components/ui/FormField";
+import FormSuccessPanel from "@/components/ui/FormSuccessPanel";
+import Button from "@/components/ui/Button";
 
 const SUBJECTS = [
   "Renseignements généraux",
@@ -14,6 +17,8 @@ const SUBJECTS = [
 interface ContactFormProps {
   defaultSubject?: string;
   defaultMessage?: string;
+  /** Résolu par le Server Component parent (app/contact/page.tsx, V3.3.R.1) — plus d'import direct de config/agency.ts ici. */
+  agencyShortName: string;
 }
 
 interface FormValues {
@@ -51,21 +56,12 @@ function validate(values: FormValues): FormErrors {
   return errors;
 }
 
-const inputClasses =
-  "w-full rounded-lg border px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none";
-
-function fieldClasses(hasError: boolean) {
-  return `${inputClasses} ${
-    hasError
-      ? "border-red-400 focus:border-red-500"
-      : "border-stone-200 focus:border-amber-500"
-  }`;
-}
-
 export default function ContactForm({
   defaultSubject,
   defaultMessage,
+  agencyShortName,
 }: ContactFormProps) {
+  const session = useSession();
   const [values, setValues] = useState<FormValues>({
     name: "",
     email: "",
@@ -81,14 +77,14 @@ export default function ContactForm({
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const validation = validate(values);
     setErrors(validation);
     if (Object.keys(validation).length > 0) return;
 
     setStatus("submitting");
-    const { error } = await createContactMessage(values);
+    const { error } = await createContactMessage({ ...values, userId: session?.user.id });
 
     if (error) {
       setStatus("error");
@@ -106,100 +102,72 @@ export default function ContactForm({
 
   if (status === "success") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col items-center rounded-2xl bg-stone-50 p-10 text-center ring-1 ring-stone-100"
-      >
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500">
+      <FormSuccessPanel
+        icon={
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth={2.5}
-            className="h-7 w-7 text-stone-950"
+            className="h-7 w-7 text-accent-ink"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
           </svg>
-        </div>
-        <h3 className="mt-6 font-serif text-2xl text-stone-900">Message envoyé</h3>
-        <p className="mt-2 max-w-sm text-sm leading-relaxed text-stone-600">
-          Merci {values.name.split(" ")[0] || ""}, votre demande a bien été
-          transmise. Un conseiller Horizon vous recontactera sous 24h.
-        </p>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="mt-6 text-sm font-medium uppercase tracking-wide text-amber-600 transition-colors hover:text-amber-700"
-        >
-          Envoyer un nouveau message
-        </button>
-      </motion.div>
+        }
+        title="Message envoyé"
+        message={`Merci ${values.name.split(" ")[0] || ""}, votre demande a bien été transmise. Un conseiller ${agencyShortName} vous recontactera sous 24h.`}
+        resetLabel="Envoyer un nouveau message"
+        onReset={handleReset}
+      />
     );
   }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label htmlFor="contact-name" className="text-xs font-medium uppercase tracking-wider text-stone-500">
-            Nom complet
-          </label>
+        <FormField label="Nom complet" htmlFor="contact-name" error={errors.name}>
           <input
             id="contact-name"
             type="text"
             value={values.name}
             onChange={(event) => updateField("name", event.target.value)}
             aria-invalid={!!errors.name}
-            className={`mt-1.5 ${fieldClasses(!!errors.name)}`}
+            className={formInputClasses(!!errors.name)}
             placeholder="Jeanne Dupont"
           />
-          {errors.name && <p className="mt-1.5 text-xs text-red-600">{errors.name}</p>}
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="contact-email" className="text-xs font-medium uppercase tracking-wider text-stone-500">
-            Email
-          </label>
+        <FormField label="Email" htmlFor="contact-email" error={errors.email}>
           <input
             id="contact-email"
             type="email"
             value={values.email}
             onChange={(event) => updateField("email", event.target.value)}
             aria-invalid={!!errors.email}
-            className={`mt-1.5 ${fieldClasses(!!errors.email)}`}
+            className={formInputClasses(!!errors.email)}
             placeholder="jeanne.dupont@email.com"
           />
-          {errors.email && <p className="mt-1.5 text-xs text-red-600">{errors.email}</p>}
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="contact-phone" className="text-xs font-medium uppercase tracking-wider text-stone-500">
-            Téléphone
-          </label>
+        <FormField label="Téléphone" htmlFor="contact-phone" error={errors.phone}>
           <input
             id="contact-phone"
             type="tel"
             value={values.phone}
             onChange={(event) => updateField("phone", event.target.value)}
             aria-invalid={!!errors.phone}
-            className={`mt-1.5 ${fieldClasses(!!errors.phone)}`}
+            className={formInputClasses(!!errors.phone)}
             placeholder="20 123 456"
           />
-          {errors.phone && <p className="mt-1.5 text-xs text-red-600">{errors.phone}</p>}
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="contact-subject" className="text-xs font-medium uppercase tracking-wider text-stone-500">
-            Sujet
-          </label>
+        <FormField label="Sujet" htmlFor="contact-subject" error={errors.subject}>
           <select
             id="contact-subject"
             value={values.subject}
             onChange={(event) => updateField("subject", event.target.value)}
             aria-invalid={!!errors.subject}
-            className={`mt-1.5 bg-white ${fieldClasses(!!errors.subject)}`}
+            className={`bg-surface ${formInputClasses(!!errors.subject)}`}
           >
             <option value="">Choisissez un sujet</option>
             {SUBJECTS.map((subject) => (
@@ -208,25 +176,20 @@ export default function ContactForm({
               </option>
             ))}
           </select>
-          {errors.subject && <p className="mt-1.5 text-xs text-red-600">{errors.subject}</p>}
-        </div>
+        </FormField>
       </div>
 
-      <div>
-        <label htmlFor="contact-message" className="text-xs font-medium uppercase tracking-wider text-stone-500">
-          Message
-        </label>
+      <FormField label="Message" htmlFor="contact-message" error={errors.message}>
         <textarea
           id="contact-message"
           rows={5}
           value={values.message}
           onChange={(event) => updateField("message", event.target.value)}
           aria-invalid={!!errors.message}
-          className={`mt-1.5 resize-none ${fieldClasses(!!errors.message)}`}
+          className={`resize-none ${formInputClasses(!!errors.message)}`}
           placeholder="Parlez-nous de votre projet..."
         />
-        {errors.message && <p className="mt-1.5 text-xs text-red-600">{errors.message}</p>}
-      </div>
+      </FormField>
 
       {status === "error" && (
         <p className="text-sm text-red-600">
@@ -234,13 +197,9 @@ export default function ContactForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={status === "submitting"}
-        className="flex w-full items-center justify-center rounded-full bg-amber-500 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-950 transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
-      >
+      <Button type="submit" disabled={status === "submitting"} className="w-full disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">
         {status === "submitting" ? "Envoi en cours..." : "Envoyer le message"}
-      </button>
+      </Button>
     </form>
   );
 }

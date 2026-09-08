@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import type { Property } from "@/data/properties";
 import { formatPrice } from "@/utils/formatPrice";
+import { getPropertyStatusLabel, getTransactionLabel } from "@/config/catalog";
+import FavoriteButton from "@/components/FavoriteButton";
+import Button from "@/components/ui/Button";
+import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
+import { cardTiltSpring, hoverLift, tapScale, staggerDelay } from "@/lib/motion";
 
 export interface PropertyCardProps extends Property {
   /** À réserver aux cartes visibles dès le premier écran (ex. début de grille). */
@@ -25,6 +29,8 @@ export default function PropertyCard({
   area,
   images,
   featured,
+  status,
+  transaction,
   preload,
   index = 0,
 }: PropertyCardProps) {
@@ -32,15 +38,18 @@ export default function PropertyCard({
 
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
+    // Lu uniquement après le montage (côté client) : window n'existe pas au
+    // rendu serveur, donc impossible de le mettre dans l'état initial sans
+    // provoquer un mismatch d'hydratation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
 
   // Position du pointeur normalisée (0-1) sur la carte, utilisée pour le tilt.
   const pointerX = useMotionValue(0.5);
   const pointerY = useMotionValue(0.5);
-  const springConfig = { stiffness: 150, damping: 20, mass: 0.5 };
-  const rotateX = useSpring(useTransform(pointerY, [0, 1], [7, -7]), springConfig);
-  const rotateY = useSpring(useTransform(pointerX, [0, 1], [-7, 7]), springConfig);
+  const rotateX = useSpring(useTransform(pointerY, [0, 1], [7, -7]), cardTiltSpring);
+  const rotateY = useSpring(useTransform(pointerX, [0, 1], [-7, 7]), cardTiltSpring);
 
   const cardRef = useRef<HTMLElement>(null);
 
@@ -63,21 +72,21 @@ export default function PropertyCard({
       ref={cardRef}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: Math.min(index, 6) * 0.06 }}
-      whileHover={{ y: -6 }}
-      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.5, delay: staggerDelay(index) }}
+      whileHover={hoverLift}
+      whileTap={tapScale}
       onPointerDown={updateTilt}
       onPointerMove={updateTilt}
       onPointerUp={resetTilt}
       onPointerLeave={resetTilt}
       onPointerCancel={resetTilt}
       style={{ rotateX, rotateY, transformPerspective: 800 }}
-      className="group relative overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200 transition-shadow duration-300 hover:shadow-xl hover:shadow-stone-900/10"
+      className="group relative overflow-hidden rounded-card bg-surface ring-1 ring-border transition-shadow duration-300 hover:shadow-card-hover"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-200">
         {image ? (
           <Image
-            src={image}
+            src={image.url}
             alt={title}
             fill
             preload={preload}
@@ -86,36 +95,40 @@ export default function PropertyCard({
           />
         ) : (
           // Placeholder tant que les visuels IA ne sont pas intégrés
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-200 via-stone-100 to-stone-300">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1}
-              className="h-16 w-16 text-stone-400"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5M9 21v-6h6v6"
-              />
-            </svg>
-          </div>
+          <ImagePlaceholder />
         )}
 
-        <span className="absolute left-4 top-4 rounded-full bg-stone-950/85 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-          {type}
-        </span>
-
-        {featured && (
-          <span className="absolute right-4 top-4 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-stone-950">
-            Coup de cœur
+        <div className="absolute left-4 top-4 flex flex-col items-start gap-2">
+          <span className="rounded-full bg-ink/85 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
+            {type}
           </span>
-        )}
+          {transaction && (
+            <span className="rounded-full bg-ink/85 px-3 py-1 text-xs font-medium uppercase tracking-wider text-white">
+              {getTransactionLabel(transaction)}
+            </span>
+          )}
+        </div>
+
+        <div className="absolute right-4 top-4 flex flex-col items-end gap-2">
+          {featured && (
+            <span className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-stone-950">
+              Coup de cœur
+            </span>
+          )}
+          {status === "reserved" && (
+            <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-wider text-charcoal ring-1 ring-border">
+              {getPropertyStatusLabel(status)}
+            </span>
+          )}
+        </div>
+
+        <div className="absolute bottom-4 right-4">
+          <FavoriteButton propertyId={id} />
+        </div>
       </div>
 
       <div className="p-6">
-        <h3 className="font-serif text-xl text-stone-900">{title}</h3>
+        <h3 className="font-serif text-xl text-charcoal">{title}</h3>
 
         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-stone-500">
           <svg
@@ -145,13 +158,13 @@ export default function PropertyCard({
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">
-          <span className="font-serif text-lg text-stone-900">{formatPrice(price)}</span>
-          <Link
-            href={`/properties/${id}`}
-            className="shrink-0 text-sm font-medium uppercase tracking-wide text-amber-600 transition-colors hover:text-amber-700"
-          >
+          <span className="font-serif text-lg text-charcoal">{formatPrice(price)}</span>
+          {/* p-3/-m-3 (au lieu de p-2/-m-2) : porte la zone tactile à ~44px
+              de hauteur (V3.3.Q.1.8) sans déplacer le texte ni le prix
+              voisin — la marge négative annule exactement le padding ajouté. */}
+          <Button href={`/properties/${id}`} variant="ghost" className="-m-3 shrink-0 p-3">
             Voir détails →
-          </Link>
+          </Button>
         </div>
       </div>
     </motion.article>

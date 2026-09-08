@@ -1,20 +1,33 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #1c1917;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-playfair);
+
+  /* Surfaces */
+  --color-ink: var(--color-stone-950);
+  --color-charcoal: var(--color-stone-900);
+  --color-surface: var(--color-white);
+  --color-surface-muted: var(--color-stone-50);
+  --color-border: var(--color-stone-200);
+  --color-border-subtle: var(--color-stone-100);
+
+  /* Accent de marque */
+  --color-accent: var(--color-amber-500);
+  --color-accent-strong: var(--color-amber-600);
+  --color-accent-ink: var(--color-stone-950);
+
+  /* Rayons */
+  --radius-card: 1rem;
+  --radius-field: 0.75rem;
+
+  /* Ombre de carte au survol (remplace hover:shadow-xl hover:shadow-stone-900/10 dupliqué partout) */
+  --shadow-card-hover: 0 20px 25px -5px color-mix(in oklab, var(--color-stone-900) 10%, transparent),
+    0 8px 10px -6px color-mix(in oklab, var(--color-stone-900) 10%, transparent);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-surface);
+  color: var(--color-charcoal);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

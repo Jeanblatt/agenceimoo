@@ -1,3 +1,5 @@
+import { agency } from "@/config/agency";
+
 export interface Agent {
   id: string;
   name: string;
@@ -11,13 +13,14 @@ export interface Agent {
 }
 
 // Pas de table "agents" côté Supabase pour l'instant : chaque bien n'a pas
-// encore de conseiller assigné individuellement. En attendant, on affiche
-// les coordonnées réelles de l'agence (déjà utilisées ailleurs sur le site,
-// via lib/site.ts) plutôt que d'inventer un profil fictif.
+// encore de conseiller assigné individuellement (modèle multi-conseillers
+// prévu pour une phase ultérieure). En attendant, on affiche les
+// coordonnées réelles de l'agence, lues depuis config/agency.ts, plutôt
+// que d'inventer un profil fictif ou de les recopier ici.
 export const defaultAgent: Agent = {
-  id: "agence-horizon",
-  name: "Équipe Horizon Immobilier",
-  phone: "+21671234567",
-  email: "contact@horizon-immo.tn",
+  id: "agence",
+  name: `Équipe ${agency.name}`,
+  phone: agency.phone,
+  email: agency.email,
   role: "Conseiller immobilier",
 };

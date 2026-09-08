@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/NavbarServer";
 import Footer from "@/components/Footer";
 import PropertyDetailHero from "@/components/properties/PropertyDetailHero";
 import PropertyInfo from "@/components/properties/PropertyInfo";
@@ -10,10 +10,11 @@ import AgentCard from "@/components/properties/AgentCard";
 import VisitRequestForm from "@/components/properties/VisitRequestForm";
 import PropertyGrid from "@/components/PropertyGrid";
 import PropertySchema from "@/components/PropertySchema";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import WhatsAppButton from "@/components/WhatsAppButtonServer";
 import { getAnnonceById, getAnnonces } from "@/lib/supabase/annonces";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { seo } from "@/config/seo";
 import { defaultAgent } from "@/data/agent";
+import { resolveAgencySettings } from "@/lib/supabase/agencySettings";
 
 interface PropertyPageProps {
   params: Promise<{ id: string }>;
@@ -28,15 +29,19 @@ export async function generateMetadata({
   params,
 }: PropertyPageProps): Promise<Metadata> {
   const { id } = await params;
-  const { property } = await getAnnonceById(id);
+  const [{ property }, settings] = await Promise.all([
+    getAnnonceById(id),
+    resolveAgencySettings(),
+  ]);
 
   if (!property) {
     return { title: "Bien introuvable" };
   }
 
-  const url = `${SITE_URL}/properties/${property.id}`;
+  const url = `${seo.siteUrl}/properties/${property.id}`;
   const image = property.images?.[0];
-  const ogTitle = `${property.title} à ${property.location} | ${SITE_NAME}`;
+  // V3.3.U : agency.name (statique) -> settings.name (runtime, resolveAgencySettings()).
+  const ogTitle = `${property.title} à ${property.location} | ${settings.name}`;
 
   return {
     title: property.title,
@@ -48,14 +53,14 @@ export async function generateMetadata({
       title: ogTitle,
       description: property.description,
       images: image
-        ? [{ url: image, width: 1200, height: 900, alt: property.title }]
+        ? [{ url: image.url, width: 1200, height: 900, alt: property.title }]
         : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
       description: property.description,
-      images: image ? [image] : undefined,
+      images: image ? [image.url] : undefined,
     },
   };
 }
@@ -72,10 +77,11 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
   const similarProperties = properties
     .filter((item) => item.id !== property.id && item.type === property.type)
     .slice(0, 3);
+  const settings = await resolveAgencySettings();
 
   return (
     <>
-      <PropertySchema property={property} />
+      <PropertySchema property={property} settings={settings} />
       <Navbar />
 
       <main className="pb-24 pt-32">
@@ -111,7 +117,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
               Remplissez ce formulaire, un conseiller vous recontactera pour confirmer.
             </p>
             <div className="mt-6 max-w-2xl">
-              <VisitRequestForm propertyId={property.id} />
+              <VisitRequestForm propertyId={property.id} agencyShortName={settings.shortName} />
             </div>
           </section>
 

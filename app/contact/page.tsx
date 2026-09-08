@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/NavbarServer";
 import Footer from "@/components/Footer";
 import ContactForm from "@/components/ContactForm";
-import WhatsAppButton from "@/components/WhatsAppButton";
-import { AGENCY } from "@/lib/site";
+import WhatsAppButton from "@/components/WhatsAppButtonServer";
+import { content } from "@/config/content";
+import { resolveAgencySettings } from "@/lib/supabase/agencySettings";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description:
-    "Contactez Horizon Immobilier pour organiser une visite, demander une estimation ou obtenir des renseignements sur nos biens d'exception.",
+  description: content.contact.metaDescription,
 };
 
 const SUBJECT_LABELS: Record<string, string> = {
@@ -20,51 +20,56 @@ interface ContactPageProps {
   searchParams: Promise<{ subject?: string; property?: string }>;
 }
 
-const contactInfo = [
-  {
-    label: "Adresse",
-    value: `${AGENCY.address.streetAddress}, ${AGENCY.address.postalCode} ${AGENCY.address.addressLocality}`,
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21Z"
-      />
-    ),
-  },
-  {
-    label: "Téléphone",
-    value: AGENCY.telephoneDisplay,
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 5c0-.6.4-1 1-1h3l2 5-2 1.5a11 11 0 0 0 5.5 5.5L15 14l5 2v3c0 .6-.4 1-1 1A15 15 0 0 1 4 5Z"
-      />
-    ),
-  },
-  {
-    label: "Email",
-    value: AGENCY.email,
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 6h16v12H4V6Zm0 0 8 7 8-7"
-      />
-    ),
-  },
-  {
-    label: "Horaires",
-    value: "Lun–Ven 9h–19h · Sam 10h–17h",
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3.5 2" />
-      </>
-    ),
-  },
-];
+// Icônes fixes par ligne de contact ; les valeurs affichées sont résolues
+// à l'exécution (voir buildContactInfo) — plus de dépendance directe à
+// config/agency.ts ici.
+function buildContactInfo(settings: Awaited<ReturnType<typeof resolveAgencySettings>>) {
+  return [
+    {
+      label: "Adresse",
+      value: `${settings.address.street}, ${settings.address.postalCode} ${settings.address.city}`,
+      icon: (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21Z"
+        />
+      ),
+    },
+    {
+      label: "Téléphone",
+      value: settings.phoneDisplay,
+      icon: (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 5c0-.6.4-1 1-1h3l2 5-2 1.5a11 11 0 0 0 5.5 5.5L15 14l5 2v3c0 .6-.4 1-1 1A15 15 0 0 1 4 5Z"
+        />
+      ),
+    },
+    {
+      label: "Email",
+      value: settings.email,
+      icon: (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 6h16v12H4V6Zm0 0 8 7 8-7"
+        />
+      ),
+    },
+    {
+      label: "Horaires",
+      value: settings.hours,
+      icon: (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3.5 2" />
+        </>
+      ),
+    },
+  ];
+}
 
 export default async function ContactPage({ searchParams }: ContactPageProps) {
   const params = await searchParams;
@@ -72,6 +77,8 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
   const defaultMessage = params.property
     ? `Je suis intéressé(e) par : ${params.property}`
     : undefined;
+  const settings = await resolveAgencySettings();
+  const contactInfo = buildContactInfo(settings);
 
   return (
     <>
@@ -81,7 +88,7 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
         <section className="bg-stone-950 pb-16 pt-40 text-center">
           <div className="mx-auto max-w-2xl px-6">
             <p className="text-xs uppercase tracking-[0.2em] text-amber-500 sm:text-sm sm:tracking-[0.3em]">
-              Horizon Immobilier
+              {settings.name}
             </p>
             <h1 className="mt-4 font-serif text-4xl text-white sm:text-5xl">
               Contactez-nous
@@ -100,11 +107,7 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
                 Une agence à votre écoute
               </h2>
               <p className="mt-4 leading-relaxed text-stone-600">
-                Depuis 2010, Horizon Immobilier accompagne une clientèle
-                exigeante dans l&apos;achat, la vente et l&apos;estimation de
-                biens d&apos;exception partout en Tunisie. Chaque demande est
-                suivie par un conseiller dédié, du premier échange jusqu&apos;à
-                la signature.
+                {content.contact.intro(settings.name, settings.foundedYear)}
               </p>
 
               <ul className="mt-10 space-y-6">
@@ -136,6 +139,7 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
               <ContactForm
                 defaultSubject={defaultSubject}
                 defaultMessage={defaultMessage}
+                agencyShortName={settings.shortName}
               />
             </div>
           </div>

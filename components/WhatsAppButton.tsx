@@ -1,21 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AGENCY } from "@/lib/site";
 
 interface WhatsAppButtonProps {
+  /** Numéro WhatsApp de l'agence, résolu par components/WhatsAppButtonServer.tsx (V3.3.R.1) — plus d'import direct de config/agency.ts ici. */
+  whatsapp: string;
   /** Utilisé pour pré-remplir le message envoyé à l'agence. */
   propertyTitle?: string;
 }
 
-export default function WhatsAppButton({ propertyTitle }: WhatsAppButtonProps) {
+export default function WhatsAppButton({ whatsapp, propertyTitle }: WhatsAppButtonProps) {
   const message = propertyTitle
     ? `Bonjour, je suis intéressé(e) par cette propriété : "${propertyTitle}".`
     : "Bonjour, je suis intéressé(e) par vos biens immobiliers.";
 
-  // Numéro fictif : à remplacer par le numéro WhatsApp du client (format
-  // international, chiffres uniquement).
-  const whatsappHref = `https://wa.me/${AGENCY.telephone.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+  const whatsappHref = `https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
 
   return (
     <motion.a

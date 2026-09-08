@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import BrandMark from "@/components/ui/BrandMark";
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
   userEmail: string;
   onSignOut: () => void;
   notifications: string[];
+  /** Résolus par AdminShell (V3.3.S.2) via getAgencySettings() et transmis à BrandMark. */
+  agencyName?: string;
+  agencyShortName?: string;
 }
 
 function initialsOf(email: string) {
@@ -20,6 +24,8 @@ export default function AdminHeader({
   userEmail,
   onSignOut,
   notifications,
+  agencyName,
+  agencyShortName,
 }: AdminHeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -31,7 +37,7 @@ export default function AdminHeader({
           type="button"
           onClick={onMenuClick}
           aria-label="Ouvrir le menu"
-          className="flex h-10 w-10 items-center justify-center text-stone-600 md:hidden"
+          className="flex h-11 w-11 items-center justify-center text-stone-600 md:hidden"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
             <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -39,9 +45,11 @@ export default function AdminHeader({
         </button>
 
         <Link href="/admin" className="flex items-center gap-2">
-          <span className="font-serif text-xl text-stone-900">
-            Horizon<span className="text-amber-500">.</span>
-          </span>
+          <BrandMark
+            textClassName="font-serif text-xl text-stone-900"
+            agencyName={agencyName}
+            agencyShortName={agencyShortName}
+          />
           <span className="hidden rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-stone-500 sm:inline-block">
             Admin
           </span>
@@ -57,7 +65,7 @@ export default function AdminHeader({
               setProfileOpen(false);
             }}
             aria-label="Notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full text-stone-600 transition-colors hover:bg-stone-100"
+            className="relative flex h-11 w-11 items-center justify-center rounded-full text-stone-600 transition-colors hover:bg-stone-100"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5">
               <path
@@ -81,7 +89,7 @@ export default function AdminHeader({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 mt-2 w-72 rounded-xl bg-white p-2 shadow-xl ring-1 ring-stone-100"
+                className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-white p-2 shadow-xl ring-1 ring-stone-100"
               >
                 <p className="px-3 py-2 text-xs font-medium uppercase tracking-wider text-stone-400">
                   Notifications
@@ -114,9 +122,9 @@ export default function AdminHeader({
               setProfileOpen((v) => !v);
               setNotifOpen(false);
             }}
-            className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-stone-100"
+            className="flex items-center gap-2 rounded-full py-1.5 pl-1 pr-2 transition-colors hover:bg-stone-100"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-900 text-xs font-semibold text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-900 text-xs font-semibold text-white">
               {initialsOf(userEmail)}
             </span>
             <span className="hidden text-left sm:block">

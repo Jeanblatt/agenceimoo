@@ -2,92 +2,68 @@
 
 import { motion } from "framer-motion";
 import { Home, Key, TrendingUp, Building2, type LucideIcon } from "lucide-react";
+import Section from "@/components/ui/Section";
+import Container from "@/components/ui/Container";
+import SectionHeading from "@/components/ui/SectionHeading";
+import Card from "@/components/ui/Card";
+import IconTile from "@/components/ui/IconTile";
+import { fadeUpVariants, fadeUpTransition, viewportOnce, hoverLift } from "@/lib/motion";
+import type { AgencyContent, ServiceIconKey } from "@/lib/supabase/agencyContent";
 
-interface Service {
-  icon: LucideIcon;
-  title: string;
-  description: string;
+// Résout l'icône lucide-react associée à chaque service — la donnée
+// (Supabase ou repli config/content.ts, voir lib/supabase/agencyContent.ts)
+// ne stocke qu'une clé texte parmi ces 4, jamais une icône libre.
+const SERVICE_ICONS: Record<ServiceIconKey, LucideIcon> = {
+  home: Home,
+  key: Key,
+  "trending-up": TrendingUp,
+  building: Building2,
+};
+
+interface ServicesProps {
+  /** Résolu par app/page.tsx via resolveAgencyContent() (V3.3.W.5) — plus d'import direct de config/content.ts ici. */
+  services: AgencyContent["services"];
 }
 
-// Tableau de données : prêt à être remplacé par une requête Supabase
-// (ex. table "services") sans changer le rendu ci-dessous.
-export const SERVICES: Service[] = [
-  {
-    icon: Home,
-    title: "Achat immobilier",
-    description:
-      "Nous vous accompagnons dans la recherche et l'acquisition de votre bien idéal.",
-  },
-  {
-    icon: Key,
-    title: "Location immobilière",
-    description:
-      "Des solutions adaptées pour trouver rapidement un logement ou un local.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Investissement immobilier",
-    description:
-      "Des conseils personnalisés pour optimiser vos projets d'investissement.",
-  },
-  {
-    icon: Building2,
-    title: "Gestion immobilière",
-    description:
-      "Une gestion complète de vos biens avec un suivi professionnel.",
-  },
-];
-
-export default function Services() {
+export default function Services({ services }: ServicesProps) {
   return (
-    <section id="services-immobiliers" className="bg-white py-24">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-2xl text-center"
-        >
-          <p className="text-sm uppercase tracking-[0.3em] text-amber-600">
-            Ce que nous proposons
-          </p>
-          <h2 className="mt-3 font-serif text-3xl text-stone-900 sm:text-4xl">
-            Nos services immobiliers
-          </h2>
-          <p className="mt-4 text-base text-stone-600">
-            Un accompagnement sur mesure à chaque étape de votre projet, de la
-            première visite à la gestion long terme de votre patrimoine.
-          </p>
-        </motion.div>
+    <Section id="services-immobiliers">
+      <Container>
+        <SectionHeading
+          eyebrow={services.eyebrow}
+          title={services.title}
+          description={services.description}
+        />
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {SERVICES.map((service, index) => {
-            const Icon = service.icon;
+          {services.items.map((service, index) => {
+            const Icon = SERVICE_ICONS[service.icon];
             return (
               <motion.div
                 key={service.title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
-                whileHover={{ y: -6 }}
-                className="group rounded-2xl bg-stone-50 p-8 ring-1 ring-stone-100 transition-shadow duration-300 hover:shadow-xl hover:shadow-stone-900/10"
+                variants={fadeUpVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={viewportOnce}
+                transition={{ ...fadeUpTransition, duration: 0.5, delay: index * 0.08 }}
+                whileHover={hoverLift}
               >
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-950 text-amber-400 transition-colors duration-300 group-hover:bg-amber-500 group-hover:text-stone-950">
-                  <Icon className="h-6 w-6" strokeWidth={1.75} />
-                </span>
-                <h3 className="mt-6 font-serif text-xl text-stone-900">
-                  {service.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-stone-600">
-                  {service.description}
-                </p>
+                <Card tone="muted" ring="subtle" hoverShadow className="group h-full">
+                  <IconTile size="lg" interactive>
+                    <Icon className="h-6 w-6" strokeWidth={1.75} />
+                  </IconTile>
+                  <h3 className="mt-6 font-serif text-xl text-charcoal">
+                    {service.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-stone-600">
+                    {service.description}
+                  </p>
+                </Card>
               </motion.div>
             );
           })}
         </div>
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 }

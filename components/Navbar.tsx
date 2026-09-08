@@ -4,15 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import BrandMark from "@/components/ui/BrandMark";
 
 const navLinks = [
   { label: "Accueil", href: "/#accueil" },
   { label: "Biens", href: "/biens" },
   { label: "Services", href: "/#services" },
   { label: "Contact", href: "/contact" },
+  { label: "Mon compte", href: "/compte" },
 ];
 
-export default function Navbar() {
+interface NavbarProps {
+  /** Résolus par components/NavbarServer.tsx (V3.3.R.1) et transmis à BrandMark. */
+  agencyName?: string;
+  agencyShortName?: string;
+}
+
+export default function Navbar({ agencyName, agencyShortName }: NavbarProps) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
@@ -39,9 +47,11 @@ export default function Navbar() {
     >
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <span className="font-serif text-2xl tracking-wide text-white">
-            Horizon<span className="text-amber-500">.</span>
-          </span>
+          <BrandMark
+            textClassName="font-serif text-2xl tracking-wide text-white"
+            agencyName={agencyName}
+            agencyShortName={agencyShortName}
+          />
         </Link>
 
         <ul className="hidden items-center gap-10 md:flex">

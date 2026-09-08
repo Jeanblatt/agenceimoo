@@ -39,7 +39,7 @@ export default function VisitRequestsToolbar({
               key={filter.value}
               type="button"
               onClick={() => onStatusFilterChange(filter.value)}
-              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`whitespace-nowrap rounded-full px-4 py-2.5 text-xs font-medium transition-colors sm:py-1.5 ${
                 isActive
                   ? "bg-amber-500 text-stone-950"
                   : "bg-stone-100 text-stone-600 hover:bg-stone-200"

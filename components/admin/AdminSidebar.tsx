@@ -12,6 +12,7 @@ export type AdminView =
   | "reviews"
   | "visitRequests"
   | "messages"
+  | "content"
   | "settings";
 
 interface NavItem {
@@ -88,6 +89,16 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    view: "content",
+    label: "Contenu du site",
+    icon: (
+      <>
+        <rect x="3.5" y="4" width="17" height="16" rx="2" />
+        <path strokeLinecap="round" d="M7.5 8.5h9M7.5 12h9M7.5 15.5h5.5" />
+      </>
+    ),
+  },
+  {
     view: "settings",
     label: "Paramètres",
     icon: (
@@ -140,7 +151,7 @@ export default function AdminSidebar({
             type="button"
             onClick={onClose}
             aria-label="Fermer le menu"
-            className="flex h-9 w-9 items-center justify-center text-stone-500"
+            className="flex h-11 w-11 items-center justify-center text-stone-500"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
               <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
@@ -159,7 +170,7 @@ export default function AdminSidebar({
                 key={item.view}
                 type="button"
                 onClick={() => onNavigate(item.view)}
-                className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-amber-500/10 text-amber-700"
                     : "text-stone-600 hover:bg-stone-100"

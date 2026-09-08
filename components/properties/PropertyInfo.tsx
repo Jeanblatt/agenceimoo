@@ -20,6 +20,10 @@ import {
   type LucideProps,
 } from "lucide-react";
 import type { Property } from "@/data/properties";
+import { getPropertyStatusLabel } from "@/config/catalog";
+import Card from "@/components/ui/Card";
+import IconTile from "@/components/ui/IconTile";
+import Button from "@/components/ui/Button";
 
 interface PropertyInfoProps {
   property: Property;
@@ -62,7 +66,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
     { icon: Home, label: "Type de bien", value: property.type },
     { icon: MapPin, label: "Localisation", value: property.location },
     ...(property.status
-      ? [{ icon: CalendarCheck, label: "Statut", value: property.status }]
+      ? [{ icon: CalendarCheck, label: "Statut", value: getPropertyStatusLabel(property.status) ?? property.status }]
       : []),
   ];
 
@@ -70,7 +74,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
     <section className="mt-16">
       {/* Caractéristiques principales */}
       <div>
-        <h2 className="font-serif text-2xl text-stone-900">
+        <h2 className="font-serif text-2xl text-charcoal">
           Informations du bien
         </h2>
 
@@ -85,19 +89,20 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 whileHover={{ y: -4 }}
-                className="flex items-center gap-4 rounded-2xl bg-stone-50 p-5 ring-1 ring-stone-100 transition-shadow duration-300 hover:shadow-lg hover:shadow-stone-900/5"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-stone-950 text-amber-400">
-                  <Icon className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-wider text-stone-500">
-                    {item.label}
-                  </p>
-                  <p className="truncate font-serif text-lg text-stone-900">
-                    {item.value}
-                  </p>
-                </div>
+                <Card tone="muted" padding="sm" hoverShadow className="flex items-center gap-4">
+                  <IconTile>
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
+                  </IconTile>
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wider text-stone-500">
+                      {item.label}
+                    </p>
+                    <p className="truncate font-serif text-lg text-charcoal">
+                      {item.value}
+                    </p>
+                  </div>
+                </Card>
               </motion.div>
             );
           })}
@@ -106,7 +111,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
 
       {/* Description */}
       <div className="mt-12">
-        <h2 className="font-serif text-2xl text-stone-900">
+        <h2 className="font-serif text-2xl text-charcoal">
           Description du bien
         </h2>
         <p
@@ -117,20 +122,20 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
           {property.description}
         </p>
         {isLongDescription && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            className="mt-3"
             onClick={() => setDescriptionExpanded((current) => !current)}
-            className="mt-3 text-sm font-medium uppercase tracking-wide text-amber-600 transition-colors hover:text-amber-700"
           >
             {descriptionExpanded ? "Réduire" : "Lire plus"}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Équipements */}
       {property.features && property.features.length > 0 && (
         <div className="mt-12">
-          <h2 className="font-serif text-2xl text-stone-900">Équipements</h2>
+          <h2 className="font-serif text-2xl text-charcoal">Équipements</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {property.features.map((feature, index) => {
               const Icon = getFeatureIcon(feature);
@@ -142,7 +147,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
                   viewport={{ once: true, margin: "-60px" }}
                   transition={{ duration: 0.4, delay: index * 0.04 }}
                   whileHover={{ y: -3 }}
-                  className="flex items-center gap-3 rounded-xl bg-white p-4 ring-1 ring-stone-100 transition-shadow duration-300 hover:shadow-md hover:shadow-stone-900/5"
+                  className="flex items-center gap-3 rounded-field bg-surface p-4 ring-1 ring-border transition-shadow duration-300 hover:shadow-md hover:shadow-stone-900/5"
                 >
                   <Icon className="h-5 w-5 shrink-0 text-amber-500" strokeWidth={1.75} />
                   <span className="text-sm text-stone-700">{feature}</span>

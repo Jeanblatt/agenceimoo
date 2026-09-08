@@ -1,13 +1,31 @@
-import { AGENCY, SITE_URL } from "@/lib/site";
+import { seo } from "@/config/seo";
+import { catalog } from "@/config/catalog";
 import type { Property } from "@/data/properties";
+import type { AgencySettings } from "@/lib/supabase/agencySettings";
 
 interface PropertySchemaProps {
   property: Property;
+  /**
+   * Résolu par l'appelant via resolveAgencySettings() (V3.3.U) — plus
+   * d'import direct de config/agency.ts ici : le vendeur ("seller") du
+   * JSON-LD doit refléter l'agence réellement configurée en base, pas le
+   * repli statique du template. Passé en prop plutôt que résolu ici pour ne
+   * pas dupliquer un appel déjà fait par la page appelante
+   * (app/properties/[id]/page.tsx), `cache()` le déduplique de toute façon
+   * mais autant garder ce composant simple, non async.
+   */
+  settings: AgencySettings;
 }
 
-export default function PropertySchema({ property }: PropertySchemaProps) {
-  const url = `${SITE_URL}/properties/${property.id}`;
-  const images = (property.images ?? []).map((src) => `${SITE_URL}${src}`);
+export default function PropertySchema({ property, settings }: PropertySchemaProps) {
+  const url = `${seo.siteUrl}/properties/${property.id}`;
+  // property.images[].url est soit une URL Supabase Storage déjà absolue,
+  // soit un chemin relatif legacy (repli image_principale, voir
+  // lib/supabase/annonces.ts) : ne préfixer que dans ce second cas, sous
+  // peine de produire "https://site.com/https://xxx.supabase.co/...".
+  const images = (property.images ?? []).map((image) =>
+    /^https?:\/\//.test(image.url) ? image.url : `${seo.siteUrl}${image.url}`
+  );
 
   const schema = {
     "@context": "https://schema.org",
@@ -20,14 +38,14 @@ export default function PropertySchema({ property }: PropertySchemaProps) {
     offers: {
       "@type": "Offer",
       price: property.price,
-      priceCurrency: "TND",
+      priceCurrency: catalog.currency,
       availability: "https://schema.org/InStock",
       url,
     },
     address: {
       "@type": "PostalAddress",
       addressLocality: property.location,
-      addressCountry: "TN",
+      addressCountry: settings.address.country,
     },
     floorSize: {
       "@type": "QuantitativeValue",
@@ -37,15 +55,15 @@ export default function PropertySchema({ property }: PropertySchemaProps) {
     ...(property.bedrooms > 0 && { numberOfRooms: property.bedrooms }),
     seller: {
       "@type": "RealEstateAgent",
-      name: AGENCY.name,
-      telephone: AGENCY.telephone,
-      email: AGENCY.email,
+      name: settings.name,
+      telephone: settings.phone,
+      email: settings.email,
       address: {
         "@type": "PostalAddress",
-        streetAddress: AGENCY.address.streetAddress,
-        addressLocality: AGENCY.address.addressLocality,
-        postalCode: AGENCY.address.postalCode,
-        addressCountry: AGENCY.address.addressCountry,
+        streetAddress: settings.address.street,
+        addressLocality: settings.address.city,
+        postalCode: settings.address.postalCode,
+        addressCountry: settings.address.country,
       },
     },
   };

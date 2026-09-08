@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { motion } from "framer-motion";
+import { useState, type SubmitEvent } from "react";
 import { CalendarCheck } from "lucide-react";
 import { createVisitRequest } from "@/lib/supabase/visitRequests";
+import { useSession } from "@/lib/supabase/auth";
+import FormField, { formInputClasses } from "@/components/ui/FormField";
+import FormSuccessPanel from "@/components/ui/FormSuccessPanel";
+import Button from "@/components/ui/Button";
 
 interface VisitRequestFormProps {
   propertyId: string;
+  /** Résolu par le Server Component parent (app/properties/[id]/page.tsx, V3.3.R.1) — plus d'import direct de config/agency.ts ici. */
+  agencyShortName: string;
 }
 
 interface FormValues {
@@ -51,17 +56,8 @@ function validate(values: FormValues): FormErrors {
   return errors;
 }
 
-const fieldClasses =
-  "mt-1.5 w-full rounded-lg border px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none";
-const labelClasses = "text-xs font-medium uppercase tracking-wider text-stone-500";
-
-function inputClasses(hasError: boolean) {
-  return `${fieldClasses} ${
-    hasError ? "border-red-400 focus:border-red-500" : "border-stone-200 focus:border-amber-500"
-  }`;
-}
-
-export default function VisitRequestForm({ propertyId }: VisitRequestFormProps) {
+export default function VisitRequestForm({ propertyId, agencyShortName }: VisitRequestFormProps) {
+  const session = useSession();
   const [values, setValues] = useState<FormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -71,14 +67,18 @@ export default function VisitRequestForm({ propertyId }: VisitRequestFormProps) 
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const validation = validate(values);
     setErrors(validation);
     if (Object.keys(validation).length > 0) return;
 
     setStatus("submitting");
-    const { error } = await createVisitRequest({ propertyId, ...values });
+    const { error } = await createVisitRequest({
+      propertyId,
+      ...values,
+      userId: session?.user.id,
+    });
 
     if (error) {
       setStatus("error");
@@ -96,89 +96,57 @@ export default function VisitRequestForm({ propertyId }: VisitRequestFormProps) 
 
   if (status === "success") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col items-center rounded-2xl bg-stone-50 p-10 text-center ring-1 ring-stone-100"
-      >
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500">
-          <CalendarCheck className="h-7 w-7 text-stone-950" strokeWidth={2} />
-        </div>
-        <h3 className="mt-6 font-serif text-2xl text-stone-900">Demande envoyée</h3>
-        <p className="mt-2 max-w-sm text-sm leading-relaxed text-stone-600">
-          Merci {values.clientName.split(" ")[0] || ""}, votre demande de visite a bien
-          été transmise. Un conseiller Horizon vous recontactera pour la confirmer.
-        </p>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="mt-6 text-sm font-medium uppercase tracking-wide text-amber-600 transition-colors hover:text-amber-700"
-        >
-          Envoyer une nouvelle demande
-        </button>
-      </motion.div>
+      <FormSuccessPanel
+        icon={<CalendarCheck className="h-7 w-7 text-accent-ink" strokeWidth={2} />}
+        title="Demande envoyée"
+        message={`Merci ${values.clientName.split(" ")[0] || ""}, votre demande de visite a bien été transmise. Un conseiller ${agencyShortName} vous recontactera pour la confirmer.`}
+        resetLabel="Envoyer une nouvelle demande"
+        onReset={handleReset}
+      />
     );
   }
 
   return (
-    <div className="rounded-2xl bg-stone-50 p-6 ring-1 ring-stone-100 sm:p-8">
+    <div className="rounded-card bg-surface-muted p-6 ring-1 ring-border sm:p-8">
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label htmlFor="visit-name" className={labelClasses}>
-              Nom complet
-            </label>
+          <FormField label="Nom complet" htmlFor="visit-name" error={errors.clientName}>
             <input
               id="visit-name"
               type="text"
               value={values.clientName}
               onChange={(event) => updateField("clientName", event.target.value)}
               aria-invalid={!!errors.clientName}
-              className={inputClasses(!!errors.clientName)}
+              className={formInputClasses(!!errors.clientName)}
               placeholder="Jeanne Dupont"
             />
-            {errors.clientName && (
-              <p className="mt-1.5 text-xs text-red-600">{errors.clientName}</p>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="visit-phone" className={labelClasses}>
-              Téléphone
-            </label>
+          <FormField label="Téléphone" htmlFor="visit-phone" error={errors.phone}>
             <input
               id="visit-phone"
               type="tel"
               value={values.phone}
               onChange={(event) => updateField("phone", event.target.value)}
               aria-invalid={!!errors.phone}
-              className={inputClasses(!!errors.phone)}
+              className={formInputClasses(!!errors.phone)}
               placeholder="20 123 456"
             />
-            {errors.phone && <p className="mt-1.5 text-xs text-red-600">{errors.phone}</p>}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="visit-email" className={labelClasses}>
-              Email
-            </label>
+          <FormField label="Email" htmlFor="visit-email" error={errors.email}>
             <input
               id="visit-email"
               type="email"
               value={values.email}
               onChange={(event) => updateField("email", event.target.value)}
               aria-invalid={!!errors.email}
-              className={inputClasses(!!errors.email)}
+              className={formInputClasses(!!errors.email)}
               placeholder="jeanne.dupont@email.com"
             />
-            {errors.email && <p className="mt-1.5 text-xs text-red-600">{errors.email}</p>}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="visit-date" className={labelClasses}>
-              Date souhaitée
-            </label>
+          <FormField label="Date souhaitée" htmlFor="visit-date" error={errors.visitDate}>
             <input
               id="visit-date"
               type="date"
@@ -186,27 +154,21 @@ export default function VisitRequestForm({ propertyId }: VisitRequestFormProps) 
               value={values.visitDate}
               onChange={(event) => updateField("visitDate", event.target.value)}
               aria-invalid={!!errors.visitDate}
-              className={inputClasses(!!errors.visitDate)}
+              className={formInputClasses(!!errors.visitDate)}
             />
-            {errors.visitDate && (
-              <p className="mt-1.5 text-xs text-red-600">{errors.visitDate}</p>
-            )}
-          </div>
+          </FormField>
         </div>
 
-        <div>
-          <label htmlFor="visit-message" className={labelClasses}>
-            Message (facultatif)
-          </label>
+        <FormField label="Message (facultatif)" htmlFor="visit-message">
           <textarea
             id="visit-message"
             rows={4}
             value={values.message}
             onChange={(event) => updateField("message", event.target.value)}
-            className={`${fieldClasses} resize-none border-stone-200 focus:border-amber-500`}
+            className={`resize-none ${formInputClasses(false)}`}
             placeholder="Précisez vos disponibilités ou toute autre information utile..."
           />
-        </div>
+        </FormField>
 
         {status === "error" && (
           <p className="text-sm text-red-600">
@@ -214,13 +176,9 @@ export default function VisitRequestForm({ propertyId }: VisitRequestFormProps) 
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={status === "submitting"}
-          className="flex w-full items-center justify-center rounded-full bg-amber-500 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-950 transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
-        >
+        <Button type="submit" disabled={status === "submitting"} className="w-full disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">
           {status === "submitting" ? "Envoi en cours..." : "Envoyer la demande"}
-        </button>
+        </Button>
       </form>
     </div>
   );

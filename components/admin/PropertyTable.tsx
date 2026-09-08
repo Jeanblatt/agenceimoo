@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import type { Property } from "@/data/properties";
+import type { Property, PropertyStatus } from "@/data/properties";
 import { formatPrice } from "@/utils/formatPrice";
+import { getPropertyStatusLabel } from "@/config/catalog";
 
 interface PropertyTableProps {
   properties: Property[];
@@ -14,10 +15,10 @@ interface PropertyTableProps {
   onDelete: (id: string) => void;
 }
 
-const statusStyles: Record<string, string> = {
-  Disponible: "bg-emerald-100 text-emerald-700",
-  Réservé: "bg-amber-100 text-amber-700",
-  Vendu: "bg-stone-200 text-stone-600",
+const statusStyles: Record<PropertyStatus, string> = {
+  available: "bg-emerald-100 text-emerald-700",
+  reserved: "bg-amber-100 text-amber-700",
+  sold: "bg-stone-200 text-stone-600",
 };
 const defaultStatusStyle = "bg-stone-100 text-stone-500";
 
@@ -70,7 +71,7 @@ export default function PropertyTable({
                       <div className="relative h-14 w-20 overflow-hidden rounded-lg bg-stone-100">
                         {image ? (
                           <Image
-                            src={image}
+                            src={image.url}
                             alt={property.title}
                             fill
                             sizes="80px"
@@ -96,10 +97,10 @@ export default function PropertyTable({
                     <td className="px-6 py-3">
                       <span
                         className={`inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                          statusStyles[property.status ?? ""] ?? defaultStatusStyle
+                          property.status ? statusStyles[property.status] : defaultStatusStyle
                         }`}
                       >
-                        {property.status ?? "—"}
+                        {property.status ? (getPropertyStatusLabel(property.status) ?? property.status) : "—"}
                       </span>
                     </td>
                     <td className="px-6 py-3">
@@ -109,7 +110,7 @@ export default function PropertyTable({
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label="Voir l'annonce publique"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900"
+                          className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
@@ -121,7 +122,7 @@ export default function PropertyTable({
                           type="button"
                           onClick={() => onEdit(property)}
                           aria-label="Modifier"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900"
+                          className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9" />
@@ -141,14 +142,14 @@ export default function PropertyTable({
                                 onDelete(property.id);
                                 setConfirmingId(null);
                               }}
-                              className="whitespace-nowrap rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700"
+                              className="whitespace-nowrap rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-red-700"
                             >
                               Confirmer
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmingId(null)}
-                              className="rounded-lg px-2 py-1.5 text-xs text-stone-500 hover:bg-stone-100"
+                              className="rounded-lg px-2.5 py-2 text-xs text-stone-500 hover:bg-stone-100"
                             >
                               Annuler
                             </button>
@@ -158,7 +159,7 @@ export default function PropertyTable({
                             type="button"
                             onClick={() => setConfirmingId(property.id)}
                             aria-label="Supprimer"
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                            className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18" />

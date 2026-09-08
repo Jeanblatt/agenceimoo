@@ -124,7 +124,7 @@ export default function VisitRequestDetailDrawer({
                 type="button"
                 onClick={onClose}
                 aria-label="Fermer"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100"
               >
                 <X className="h-5 w-5" strokeWidth={1.75} />
               </button>
@@ -229,7 +229,7 @@ export default function VisitRequestDetailDrawer({
                   type="button"
                   onClick={handleSaveNotes}
                   disabled={!notesChanged || savingNotes}
-                  className="mt-2 flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-xs font-medium uppercase tracking-wider text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-2 flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-3 text-xs font-medium uppercase tracking-wider text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {savingNotes && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   Enregistrer la note
@@ -245,7 +245,7 @@ export default function VisitRequestDetailDrawer({
                       type="button"
                       onClick={() => handleStatusChange("confirmed")}
                       disabled={updatingStatus !== null}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                     >
                       {updatingStatus === "confirmed" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -260,7 +260,7 @@ export default function VisitRequestDetailDrawer({
                       type="button"
                       onClick={() => handleStatusChange("completed")}
                       disabled={updatingStatus !== null}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
                     >
                       {updatingStatus === "completed" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -274,7 +274,7 @@ export default function VisitRequestDetailDrawer({
                     type="button"
                     onClick={() => handleStatusChange("cancelled")}
                     disabled={updatingStatus !== null}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-stone-100 px-4 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-stone-100 px-4 py-3 text-sm font-medium text-stone-700 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                   >
                     {updatingStatus === "cancelled" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -292,7 +292,7 @@ export default function VisitRequestDetailDrawer({
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
                   >
                     {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
                     Confirmer la suppression
@@ -300,7 +300,7 @@ export default function VisitRequestDetailDrawer({
                   <button
                     type="button"
                     onClick={() => setConfirmingDelete(false)}
-                    className="rounded-lg px-4 py-2.5 text-sm text-stone-500 hover:bg-stone-100"
+                    className="rounded-lg px-4 py-3 text-sm text-stone-500 hover:bg-stone-100"
                   >
                     Annuler
                   </button>
@@ -309,7 +309,7 @@ export default function VisitRequestDetailDrawer({
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(true)}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium text-stone-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-3 text-sm font-medium text-stone-500 transition-colors hover:bg-red-50 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                   Supprimer la demande

@@ -5,6 +5,9 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Bus, GraduationCap, MapPin, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import type { Property } from "@/data/properties";
+import { agency } from "@/config/agency";
+import Card from "@/components/ui/Card";
+import IconTile from "@/components/ui/IconTile";
 
 const PropertyMapView = dynamic(() => import("@/components/properties/PropertyMapView"), {
   ssr: false,
@@ -38,21 +41,21 @@ function useGeocodedPosition(property: Property) {
       ? { lat: property.latitude, lng: property.longitude }
       : null
   );
-  const [status, setStatus] = useState<GeocodeStatus>(coords ? "success" : "loading");
+  const [status, setStatus] = useState<GeocodeStatus>(() => {
+    if (coords) return "success";
+    return property.address || property.location ? "loading" : "error";
+  });
 
   useEffect(() => {
     if (coords) return;
 
     const query = property.address || property.location;
-    if (!query) {
-      setStatus("error");
-      return;
-    }
+    if (!query) return;
 
     const controller = new AbortController();
 
     fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=tn&q=${encodeURIComponent(query)}`,
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=${agency.address.country.toLowerCase()}&q=${encodeURIComponent(query)}`,
       { signal: controller.signal }
     )
       .then((response) => response.json())
@@ -80,7 +83,7 @@ export default function PropertyLocation({ property }: PropertyLocationProps) {
 
   return (
     <section className="mt-12">
-      <h2 className="font-serif text-2xl text-stone-900">Localisation</h2>
+      <h2 className="font-serif text-2xl text-charcoal">Localisation</h2>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-stone-600">
         <p className="flex items-center gap-1.5">
@@ -92,7 +95,7 @@ export default function PropertyLocation({ property }: PropertyLocationProps) {
         )}
       </div>
 
-      <div className="mt-6 h-[400px] overflow-hidden rounded-2xl bg-stone-100 shadow-md ring-1 ring-stone-100">
+      <div className="mt-6 h-[400px] overflow-hidden rounded-card bg-stone-100 shadow-md ring-1 ring-border">
         {status === "loading" && (
           <div className="h-full w-full animate-pulse bg-stone-200" />
         )}
@@ -113,7 +116,7 @@ export default function PropertyLocation({ property }: PropertyLocationProps) {
 
       {/* À proximité */}
       <div className="mt-10">
-        <h3 className="font-serif text-xl text-stone-900">À proximité</h3>
+        <h3 className="font-serif text-xl text-charcoal">À proximité</h3>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {NEARBY_CATEGORIES.map((item, index) => {
             const Icon = item.icon;
@@ -125,12 +128,13 @@ export default function PropertyLocation({ property }: PropertyLocationProps) {
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 whileHover={{ y: -3 }}
-                className="flex flex-col items-center gap-3 rounded-2xl bg-stone-50 p-6 text-center ring-1 ring-stone-100 transition-shadow duration-300 hover:shadow-lg hover:shadow-stone-900/5"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-stone-950 text-amber-400">
-                  <Icon className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-                <p className="text-sm font-medium text-stone-700">{item.label}</p>
+                <Card tone="muted" hoverShadow className="flex flex-col items-center gap-3 text-center">
+                  <IconTile>
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
+                  </IconTile>
+                  <p className="text-sm font-medium text-stone-700">{item.label}</p>
+                </Card>
               </motion.div>
             );
           })}

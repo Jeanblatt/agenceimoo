@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Lock } from "lucide-react";
 import { signIn } from "@/lib/supabase/auth";
+import { agency } from "@/config/agency";
 
 const fieldClasses =
   "mt-1.5 w-full rounded-lg border border-stone-200 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none";
@@ -62,7 +63,7 @@ export default function AdminLogin() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className={fieldClasses}
-              placeholder="admin@horizon-immo.tn"
+              placeholder={agency.email}
             />
           </div>
 

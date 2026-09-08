@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Button from "@/components/ui/Button";
 
 interface ContactButtonProps {
   /** Pré-remplit la demande de contact avec le bien concerné. */
@@ -19,19 +19,17 @@ export default function ContactButton({ propertyTitle }: ContactButtonProps) {
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row">
-      <Link
-        href={visitHref}
-        className="flex flex-1 items-center justify-center rounded-full bg-amber-500 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-950 transition-transform hover:scale-[1.02]"
-      >
+      <Button href={visitHref} className="flex-1">
         Demander une visite
-      </Link>
+      </Button>
 
-      <Link
+      <Button
         href={`/contact?subject=information${propertyParam}`}
-        className="flex items-center justify-center rounded-full border border-stone-300 px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-stone-900 transition-colors hover:border-amber-500 hover:text-amber-600"
+        variant="outline"
+        tone="onLight"
       >
         Contacter l&apos;agence
-      </Link>
+      </Button>
     </div>
   );
 }

@@ -8,6 +8,7 @@ export interface ContactMessagePayload {
   phone: string;
   subject: string;
   message: string;
+  userId?: string;
 }
 
 export interface ContactMessage {
@@ -58,6 +59,7 @@ export async function createContactMessage(
     subject: payload.subject,
     message: payload.message,
     status: "new",
+    user_id: payload.userId ?? null,
   });
 
   if (error) {
@@ -65,6 +67,33 @@ export async function createContactMessage(
   }
 
   return { error: null };
+}
+
+// Lecture réservée à l'auteur du message (rôle authenticated, policy RLS
+// "contact_messages: select own") — utilisée par l'espace /compte.
+export async function getMyContactMessages(): Promise<{
+  messages: ContactMessage[];
+  error: string | null;
+}> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { messages: [], error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { messages: [], error: error.message };
+  }
+
+  return { messages: (data as ContactMessageRow[]).map(mapContactMessageRow), error: null };
 }
 
 // Lecture réservée à l'admin (rôle authenticated) — voir la policy RLS
