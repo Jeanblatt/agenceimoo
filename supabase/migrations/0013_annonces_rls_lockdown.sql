@@ -25,6 +25,7 @@
 alter table public.annonces enable row level security;
 
 drop policy if exists "Authenticated insert access on annonces" on public.annonces;
+drop policy if exists "annonces: admin insert" on public.annonces;
 create policy "annonces: admin insert"
   on public.annonces for insert
   to authenticated
@@ -33,6 +34,7 @@ create policy "annonces: admin insert"
   ));
 
 drop policy if exists "Authenticated update access on annonces" on public.annonces;
+drop policy if exists "annonces: admin update" on public.annonces;
 create policy "annonces: admin update"
   on public.annonces for update
   to authenticated
@@ -44,6 +46,7 @@ create policy "annonces: admin update"
   ));
 
 drop policy if exists "Authenticated delete access on annonces" on public.annonces;
+drop policy if exists "annonces: admin delete" on public.annonces;
 create policy "annonces: admin delete"
   on public.annonces for delete
   to authenticated
