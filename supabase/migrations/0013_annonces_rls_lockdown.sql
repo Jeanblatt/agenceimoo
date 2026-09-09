@@ -24,6 +24,28 @@
 
 alter table public.annonces enable row level security;
 
+-- Lecture publique : contrairement aux policies d'écriture ci-dessous
+-- (renommées depuis leur équivalent legacy), la policy SELECT publique
+-- ("Enable read access for all users") n'est jamais recréée ici sur les
+-- environnements où elle existe déjà (production, voir en-tête). Mais
+-- aucune migration ne la crée non plus sur une base neuve — bloc défensif :
+-- ne crée "annonces: public select" QUE si aucune policy SELECT n'existe
+-- déjà pour cette table, quel que soit son nom. Vrai no-op sur production
+-- (où "Enable read access for all users" existe déjà) ; corrige l'absence
+-- sur une installation fraîche.
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'annonces' and cmd = 'SELECT'
+  ) then
+    create policy "annonces: public select"
+      on public.annonces for select
+      to anon, authenticated
+      using (true);
+  end if;
+end $$;
+
 drop policy if exists "Authenticated insert access on annonces" on public.annonces;
 drop policy if exists "annonces: admin insert" on public.annonces;
 create policy "annonces: admin insert"
