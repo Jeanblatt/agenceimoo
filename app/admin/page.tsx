@@ -175,6 +175,7 @@ export default function AdminDashboardPage() {
                 pendingVisits={pendingVisits}
                 newMessages={newMessages}
                 pendingReviews={pendingReviews}
+                onNavigate={handleNavigate}
               />
 
               <PropertyTable
