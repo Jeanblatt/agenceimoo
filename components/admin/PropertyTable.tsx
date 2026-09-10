@@ -13,6 +13,9 @@ interface PropertyTableProps {
   title?: string;
   onEdit: (property: Property) => void;
   onDelete: (id: string) => void;
+  /** Actions optionnelles affichées dans l'en-tête, à côté de `title` — non utilisées (donc non affichées) sur la liste complète des propriétés, qui n'a pas de `title`. */
+  onAddProperty?: () => void;
+  onViewAll?: () => void;
 }
 
 const statusStyles: Record<PropertyStatus, string> = {
@@ -27,14 +30,39 @@ export default function PropertyTable({
   title,
   onEdit,
   onDelete,
+  onAddProperty,
+  onViewAll,
 }: PropertyTableProps) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-stone-100">
       {title && (
-        <div className="border-b border-stone-100 px-6 py-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 px-6 py-5">
           <h2 className="font-serif text-xl text-stone-900">{title}</h2>
+
+          {(onAddProperty || onViewAll) && (
+            <div className="flex flex-wrap items-center gap-4">
+              {onAddProperty && (
+                <button
+                  type="button"
+                  onClick={onAddProperty}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-stone-200 px-4 py-2 text-xs font-medium uppercase tracking-wider text-stone-600 transition-colors hover:border-amber-500 hover:text-amber-600"
+                >
+                  + Ajouter un bien
+                </button>
+              )}
+              {onViewAll && (
+                <button
+                  type="button"
+                  onClick={onViewAll}
+                  className="whitespace-nowrap text-sm font-medium text-amber-600 hover:text-amber-700"
+                >
+                  Voir toutes les annonces →
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

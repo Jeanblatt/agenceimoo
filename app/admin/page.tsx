@@ -166,7 +166,7 @@ export default function AdminDashboardPage() {
               <div>
                 <h1 className="font-serif text-2xl text-stone-900">Tableau de bord</h1>
                 <p className="mt-1 text-sm text-stone-500">
-                  Vue d&apos;ensemble de votre portefeuille de biens.
+                  Vue d&apos;ensemble de votre activité immobilière.
                 </p>
               </div>
 
@@ -183,6 +183,8 @@ export default function AdminDashboardPage() {
                 title="Dernières annonces"
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onAddProperty={() => handleNavigate("add")}
+                onViewAll={() => handleNavigate("properties")}
               />
             </div>
           )}
