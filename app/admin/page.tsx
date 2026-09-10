@@ -18,6 +18,8 @@ import {
   type AnnoncePayload,
 } from "@/lib/supabase/annonces";
 import { getVisitRequests } from "@/lib/supabase/visitRequests";
+import { getContactMessages } from "@/lib/supabase/contactMessages";
+import { getReviews } from "@/lib/supabase/reviews";
 
 interface Feedback {
   type: "success" | "error";
@@ -29,6 +31,8 @@ export default function AdminDashboardPage() {
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [pendingVisits, setPendingVisits] = useState(0);
+  const [newMessages, setNewMessages] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -50,8 +54,19 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [, { requests }] = await Promise.all([refreshProperties(), getVisitRequests()]);
+      const [, { requests }, { messages }, { reviews }] = await Promise.all([
+        refreshProperties(),
+        getVisitRequests(),
+        getContactMessages(),
+        getReviews(),
+      ]);
       setPendingVisits(requests.filter((request) => request.status === "pending").length);
+      // "Nouveaux" (pas le total) : même convention que "Visites en attente"
+      // ci-dessus — le dashboard met en avant ce qui reste à traiter, pas un
+      // volume brut. Cohérent avec la page /admin/messages, qui affiche déjà
+      // ce même sous-compte ("X messages au total, dont Y nouveaux").
+      setNewMessages(messages.filter((message) => message.status === "new").length);
+      setPendingReviews(reviews.filter((review) => review.status === "pending").length);
       setLoading(false);
     })();
   }, [refreshProperties]);
@@ -155,7 +170,12 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
 
-              <DashboardStats properties={properties} pendingVisits={pendingVisits} />
+              <DashboardStats
+                properties={properties}
+                pendingVisits={pendingVisits}
+                newMessages={newMessages}
+                pendingReviews={pendingReviews}
+              />
 
               <PropertyTable
                 properties={properties.slice(0, 5)}
