@@ -3,13 +3,13 @@
 import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { UserCircle } from "lucide-react";
-import { signIn, signUp } from "@/lib/supabase/auth";
+import { requestPasswordReset, signIn, signUp } from "@/lib/supabase/auth";
 
 const fieldClasses =
   "mt-1.5 w-full rounded-lg border border-stone-200 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none";
 const labelClasses = "text-xs font-medium uppercase tracking-wider text-stone-500";
 
-type Mode = "signIn" | "signUp";
+type Mode = "signIn" | "signUp" | "forgotPassword";
 
 export default function ClientAuthForm() {
   const [mode, setMode] = useState<Mode>("signIn");
@@ -32,6 +32,27 @@ export default function ClientAuthForm() {
     setError(null);
     setNotice(null);
     setIsSubmitting(true);
+
+    if (mode === "forgotPassword") {
+      const { error: resetError } = await requestPasswordReset(email.trim());
+      setIsSubmitting(false);
+
+      if (resetError) {
+        // Erreur technique uniquement (réseau, limite de requêtes...) —
+        // jamais formulée différemment selon que l'email existe ou non.
+        console.error("Échec de demande de réinitialisation :", resetError);
+        setError("Une erreur est survenue. Merci de réessayer plus tard.");
+        return;
+      }
+
+      // Message volontairement identique que l'email corresponde ou non à
+      // un compte : ne jamais révéler l'existence d'un compte via ce
+      // formulaire (Supabase lui-même ne le révèle jamais côté réponse).
+      setNotice(
+        "Si un compte existe avec cette adresse, vous recevrez un email pour réinitialiser votre mot de passe."
+      );
+      return;
+    }
 
     if (mode === "signIn") {
       const { error: signInError } = await signIn(email.trim(), password);
@@ -75,7 +96,9 @@ export default function ClientAuthForm() {
           <p className="mt-1 text-sm text-stone-500">
             {mode === "signIn"
               ? "Connectez-vous pour suivre vos favoris et vos demandes."
-              : "Créez votre compte pour suivre vos favoris et vos demandes."}
+              : mode === "signUp"
+                ? "Créez votre compte pour suivre vos favoris et vos demandes."
+                : "Indiquez votre email pour recevoir un lien de réinitialisation."}
           </p>
         </div>
 
@@ -131,22 +154,35 @@ export default function ClientAuthForm() {
             />
           </div>
 
-          <div>
-            <label htmlFor="client-password" className={labelClasses}>
-              Mot de passe
-            </label>
-            <input
-              id="client-password"
-              type="password"
-              required
-              minLength={6}
-              autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className={fieldClasses}
-              placeholder="••••••••"
-            />
-          </div>
+          {mode !== "forgotPassword" && (
+            <div>
+              <label htmlFor="client-password" className={labelClasses}>
+                Mot de passe
+              </label>
+              <input
+                id="client-password"
+                type="password"
+                required
+                minLength={6}
+                autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={fieldClasses}
+                placeholder="••••••••"
+              />
+              {mode === "signIn" && (
+                <div className="mt-1.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => switchMode("forgotPassword")}
+                    className="text-xs font-medium text-amber-600 hover:text-amber-700"
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {notice && (
             <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</p>
@@ -164,12 +200,14 @@ export default function ClientAuthForm() {
               ? "Veuillez patienter..."
               : mode === "signIn"
                 ? "Se connecter"
-                : "Créer mon compte"}
+                : mode === "signUp"
+                  ? "Créer mon compte"
+                  : "Envoyer le lien"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-stone-500">
-          {mode === "signIn" ? (
+          {mode === "signIn" && (
             <>
               Pas encore de compte ?{" "}
               <button
@@ -180,7 +218,8 @@ export default function ClientAuthForm() {
                 Créer un compte
               </button>
             </>
-          ) : (
+          )}
+          {mode === "signUp" && (
             <>
               Déjà un compte ?{" "}
               <button
@@ -191,6 +230,15 @@ export default function ClientAuthForm() {
                 Se connecter
               </button>
             </>
+          )}
+          {mode === "forgotPassword" && (
+            <button
+              type="button"
+              onClick={() => switchMode("signIn")}
+              className="font-medium text-amber-600 hover:text-amber-700"
+            >
+              ← Retour à la connexion
+            </button>
           )}
         </p>
       </motion.div>
