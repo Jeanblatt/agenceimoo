@@ -8,6 +8,7 @@ import VisitRequestsToolbar, {
 } from "@/components/admin/visitRequests/VisitRequestsToolbar";
 import VisitRequestsTable from "@/components/admin/visitRequests/VisitRequestsTable";
 import VisitRequestDetailDrawer from "@/components/admin/visitRequests/VisitRequestDetailDrawer";
+import VisitCalendar from "@/components/admin/visitRequests/VisitCalendar";
 import {
   buildVisitCenterGroups,
   computeVisitSummaryCounts,
@@ -49,6 +50,10 @@ export default function AdminVisitRequestsPage() {
   const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
   const [dateFilter, setDateFilter] = useState<DateFilterState>(DEFAULT_DATE_FILTER);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // V3.5.B — le calendrier est additif : la Liste V3.5.A (recherche,
+  // filtres, stats, À venir/Historique) reste intégralement disponible via
+  // ce sélecteur, jamais remplacée.
+  const [displayMode, setDisplayMode] = useState<"list" | "calendar">("list");
 
   // Recalculé à chaque rendu (appel Intl très léger, pas de useMemo requis)
   // : reste correct même si l'onglet admin reste ouvert au-delà de minuit.
@@ -225,44 +230,74 @@ export default function AdminVisitRequestsPage() {
               ))}
             </div>
 
-            <VisitRequestsToolbar
-              search={search}
-              onSearchChange={setSearch}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              counts={counts}
-              viewFilter={viewFilter}
-              onViewFilterChange={setViewFilter}
-              dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
-            />
+            <div className="flex gap-1.5">
+              {([
+                { value: "list", label: "Liste" },
+                { value: "calendar", label: "Calendrier" },
+              ] as const).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setDisplayMode(option.value)}
+                  className={`rounded-full px-4 py-2.5 text-xs font-medium transition-colors sm:py-1.5 ${
+                    displayMode === option.value
+                      ? "bg-amber-500 text-stone-950"
+                      : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
 
-            {(viewFilter === "all" || viewFilter === "upcoming") && (
-              <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-stone-700">À venir</h2>
-                <VisitRequestsTable
-                  groups={upcomingGroups}
-                  propertyTitles={propertyTitles}
-                  propertyHrefs={propertyHrefs}
-                  todayStr={todayStr}
-                  onSelect={(request) => setSelectedId(request.id)}
-                  emptyMessage="Aucune visite à venir ne correspond à ces critères."
+            {displayMode === "list" ? (
+              <>
+                <VisitRequestsToolbar
+                  search={search}
+                  onSearchChange={setSearch}
+                  statusFilter={statusFilter}
+                  onStatusFilterChange={setStatusFilter}
+                  counts={counts}
+                  viewFilter={viewFilter}
+                  onViewFilterChange={setViewFilter}
+                  dateFilter={dateFilter}
+                  onDateFilterChange={setDateFilter}
                 />
-              </div>
-            )}
 
-            {(viewFilter === "all" || viewFilter === "history") && (
-              <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-stone-700">Historique</h2>
-                <VisitRequestsTable
-                  groups={[{ requests: historyRequests }]}
-                  propertyTitles={propertyTitles}
-                  propertyHrefs={propertyHrefs}
-                  todayStr={todayStr}
-                  onSelect={(request) => setSelectedId(request.id)}
-                  emptyMessage="Aucun historique ne correspond à ces critères."
-                />
-              </div>
+                {(viewFilter === "all" || viewFilter === "upcoming") && (
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-stone-700">À venir</h2>
+                    <VisitRequestsTable
+                      groups={upcomingGroups}
+                      propertyTitles={propertyTitles}
+                      propertyHrefs={propertyHrefs}
+                      todayStr={todayStr}
+                      onSelect={(request) => setSelectedId(request.id)}
+                      emptyMessage="Aucune visite à venir ne correspond à ces critères."
+                    />
+                  </div>
+                )}
+
+                {(viewFilter === "all" || viewFilter === "history") && (
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-stone-700">Historique</h2>
+                    <VisitRequestsTable
+                      groups={[{ requests: historyRequests }]}
+                      propertyTitles={propertyTitles}
+                      propertyHrefs={propertyHrefs}
+                      todayStr={todayStr}
+                      onSelect={(request) => setSelectedId(request.id)}
+                      emptyMessage="Aucun historique ne correspond à ces critères."
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <VisitCalendar
+                requests={requests}
+                propertyTitles={propertyTitles}
+                onSelect={(request) => setSelectedId(request.id)}
+              />
             )}
           </>
         )}

@@ -1,4 +1,4 @@
-import type { VisitRequest } from "@/lib/supabase/visitRequests";
+import type { VisitRequest, VisitRequestStatus } from "@/lib/supabase/visitRequests";
 
 // V3.5.A — Admin Visit Center : classification/tri/formatage partagés par
 // VisitRequestsTable, VisitRequestDetailDrawer, VisitRequestsToolbar et
@@ -230,3 +230,196 @@ export function matchesDateFilter(visitDate: string, filter: DateFilterState, to
     }
   }
 }
+
+// -- V3.5.B — Smart Calendar --
+//
+// Positionnement/regroupement purement graphiques : AUCUNE fonction
+// ci-dessous ne calcule de disponibilité. Le calendrier affiche uniquement
+// des visit_requests déjà existantes (déjà chargées par getVisitRequests(),
+// V3.4/V3.5.A) — jamais resolveAvailability/generateDaySlots/
+// generateTheoreticalSlots/getAvailableVisitSlots, volontairement non
+// importés ici.
+
+export type CalendarView = "day" | "week" | "month";
+
+const MONTH_NAMES_FR = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+const WEEKDAY_NAMES_FR = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const WEEKDAY_SHORT_FR = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+// "HH:mm" ou "HH:mm:ss" (format brut Postgres `time`) -> minutes depuis
+// minuit. Réécrit localement (même principe que TIME_PATTERN dans
+// lib/supabase/visitRequests.ts, V3.4.C) plutôt que d'importer l'équivalent
+// privé de lib/scheduling/availability.ts — périmètre V3.5.B strictement
+// limité aux fichiers visit-requests.
+function timeStringToMinutes(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+// Dates (YYYY-MM-DD) à afficher pour une vue donnée. "week" : lundi->dimanche
+// de la semaine contenant referenceDateStr (réutilise getWeekRange
+// ci-dessus). "month" : grille mensuelle complétée aux semaines pleines.
+export function getVisibleDates(view: CalendarView, referenceDateStr: string): string[] {
+  if (view === "day") return [referenceDateStr];
+
+  if (view === "week") {
+    const { start } = getWeekRange(referenceDateStr);
+    const startDate = toUtcDate(start);
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(startDate);
+      date.setUTCDate(startDate.getUTCDate() + index);
+      return date.toISOString().slice(0, 10);
+    });
+  }
+
+  return getMonthGridDates(referenceDateStr);
+}
+
+// Grille mensuelle : toutes les dates du mois de referenceDateStr,
+// complétées avant/après par les jours des semaines adjacentes nécessaires
+// pour obtenir des semaines complètes (lundi->dimanche) — pattern standard
+// d'un calendrier mensuel.
+export function getMonthGridDates(referenceDateStr: string): string[] {
+  const [year, month] = referenceDateStr.split("-").map(Number);
+  const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
+  const lastOfMonth = new Date(Date.UTC(year, month, 0));
+
+  const firstWeekday = firstOfMonth.getUTCDay();
+  const leading = firstWeekday === 0 ? 6 : firstWeekday - 1;
+
+  const lastWeekday = lastOfMonth.getUTCDay();
+  const trailing = lastWeekday === 0 ? 0 : 7 - lastWeekday;
+
+  const start = new Date(firstOfMonth);
+  start.setUTCDate(firstOfMonth.getUTCDate() - leading);
+
+  const totalDays = leading + lastOfMonth.getUTCDate() + trailing;
+
+  return Array.from({ length: totalDays }, (_, index) => {
+    const date = new Date(start);
+    date.setUTCDate(start.getUTCDate() + index);
+    return date.toISOString().slice(0, 10);
+  });
+}
+
+// Déplace la date de référence d'une unité (jour/semaine/mois) selon la vue
+// active. "month" normalise toujours au 1er du mois cible (évite le bug
+// classique "31 janvier + 1 mois" -> débordement en mars via février).
+export function shiftReferenceDate(
+  view: CalendarView,
+  referenceDateStr: string,
+  direction: 1 | -1
+): string {
+  const date = toUtcDate(referenceDateStr);
+  if (view === "day") {
+    date.setUTCDate(date.getUTCDate() + direction);
+  } else if (view === "week") {
+    date.setUTCDate(date.getUTCDate() + direction * 7);
+  } else {
+    date.setUTCMonth(date.getUTCMonth() + direction, 1);
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+export function formatPeriodLabel(view: CalendarView, referenceDateStr: string): string {
+  if (view === "day") {
+    const date = toUtcDate(referenceDateStr);
+    return `${capitalize(WEEKDAY_NAMES_FR[date.getUTCDay()])} ${date.getUTCDate()} ${MONTH_NAMES_FR[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+  }
+
+  if (view === "week") {
+    const { start, end } = getWeekRange(referenceDateStr);
+    const startDate = toUtcDate(start);
+    const endDate = toUtcDate(end);
+    const endLabel = `${endDate.getUTCDate()} ${MONTH_NAMES_FR[endDate.getUTCMonth()]} ${endDate.getUTCFullYear()}`;
+    if (startDate.getUTCMonth() === endDate.getUTCMonth() && startDate.getUTCFullYear() === endDate.getUTCFullYear()) {
+      return `${startDate.getUTCDate()} – ${endLabel}`;
+    }
+    return `${startDate.getUTCDate()} ${MONTH_NAMES_FR[startDate.getUTCMonth()]} – ${endLabel}`;
+  }
+
+  const date = toUtcDate(`${referenceDateStr.slice(0, 7)}-01`);
+  return `${capitalize(MONTH_NAMES_FR[date.getUTCMonth()])} ${date.getUTCFullYear()}`;
+}
+
+// En-tête court d'une colonne jour (vue Semaine), ex. { weekday: "Lun", day: 14 }.
+export function formatDayHeader(dateStr: string): { weekday: string; day: number } {
+  const date = toUtcDate(dateStr);
+  return { weekday: WEEKDAY_SHORT_FR[date.getUTCDay()], day: date.getUTCDate() };
+}
+
+// Regroupe des demandes par visitDate — utilisé par la vue Mois (compteurs)
+// et la vue Jour/Semaine (retrouver les demandes d'une colonne).
+export function groupRequestsByDate(requests: VisitRequest[]): Map<string, VisitRequest[]> {
+  const map = new Map<string, VisitRequest[]>();
+  for (const request of requests) {
+    const bucket = map.get(request.visitDate);
+    if (bucket) bucket.push(request);
+    else map.set(request.visitDate, [request]);
+  }
+  return map;
+}
+
+export interface TimeGridBounds {
+  startMinutes: number;
+  endMinutes: number;
+}
+
+const DEFAULT_GRID_START_MINUTES = 8 * 60;
+const DEFAULT_GRID_END_MINUTES = 20 * 60;
+
+// Bornes horaires de la grille — uniquement pour dimensionner l'axe
+// temporel affiché, aucun rapport avec les horaires d'ouverture réels de
+// l'agence (visit_hours) : une plage par défaut raisonnable (08:00–20:00),
+// étendue si une visite existante déborde de cette plage (jamais tronquée —
+// une visite réelle doit toujours rester visible).
+export function computeTimeGridBounds(requests: Pick<VisitRequest, "visitTime" | "durationMinutes">[]): TimeGridBounds {
+  let start = DEFAULT_GRID_START_MINUTES;
+  let end = DEFAULT_GRID_END_MINUTES;
+
+  for (const request of requests) {
+    if (!request.visitTime) continue;
+    const requestStart = timeStringToMinutes(request.visitTime);
+    const requestEnd = requestStart + request.durationMinutes;
+    if (requestStart < start) start = Math.floor(requestStart / 60) * 60;
+    if (requestEnd > end) end = Math.ceil(requestEnd / 60) * 60;
+  }
+
+  return { startMinutes: start, endMinutes: end };
+}
+
+export interface VisitBlockOffset {
+  topMinutes: number;
+  durationMinutes: number;
+}
+
+// Position purement graphique d'un rendez-vous dans la grille horaire —
+// AUCUN calcul de disponibilité. null si la demande n'a pas de créneau
+// (visitTime NULL, legacy) : ces demandes ne sont jamais placées sur l'axe
+// temporel, voir "Demandes sans heure" dans VisitCalendarTimeGrid.
+export function getVisitBlockOffset(
+  request: Pick<VisitRequest, "visitTime" | "durationMinutes">,
+  bounds: TimeGridBounds
+): VisitBlockOffset | null {
+  if (!request.visitTime) return null;
+  const startMinutes = Math.max(0, timeStringToMinutes(request.visitTime) - bounds.startMinutes);
+  return { topMinutes: startMinutes, durationMinutes: request.durationMinutes };
+}
+
+// Couleurs d'accent par statut pour les blocs du calendrier — reflète
+// volontairement les mêmes familles de couleurs que STATUS_STYLES dans
+// StatusBadge.tsx (amber/blue/emerald/stone) sans modifier ce fichier
+// (hors périmètre de cette étape) ni y importer une constante non exportée.
+export const STATUS_ACCENT_CLASSES: Record<VisitRequestStatus, string> = {
+  pending: "border-amber-400 bg-amber-50 text-amber-900",
+  confirmed: "border-blue-400 bg-blue-50 text-blue-900",
+  completed: "border-emerald-400 bg-emerald-50 text-emerald-900",
+  cancelled: "border-stone-300 bg-stone-100 text-stone-500",
+};
