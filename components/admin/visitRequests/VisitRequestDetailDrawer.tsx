@@ -14,9 +14,11 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import type { Property } from "@/data/properties";
 import type { VisitRequest, VisitRequestStatus } from "@/lib/supabase/visitRequests";
 import StatusBadge from "@/components/admin/visitRequests/StatusBadge";
+import { formatDateTime, formatVisitDate } from "@/components/admin/visitRequests/visitScheduling";
 import { formatPrice } from "@/utils/formatPrice";
 
 interface VisitRequestDetailDrawerProps {
@@ -26,22 +28,6 @@ interface VisitRequestDetailDrawerProps {
   onUpdateStatus: (id: string, status: VisitRequestStatus) => Promise<void>;
   onSaveNotes: (id: string, notes: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-}
-
-function formatDateTime(value: string) {
-  const date = value.length <= 10 ? new Date(`${value}T00:00:00`) : new Date(value);
-  return date.toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatDate(value: string) {
-  const date = value.length <= 10 ? new Date(`${value}T00:00:00`) : new Date(value);
-  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export default function VisitRequestDetailDrawer({
@@ -140,7 +126,13 @@ export default function VisitRequestDetailDrawer({
                     <Home className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" strokeWidth={1.75} />
                     <div>
                       <p className="font-medium text-stone-900">
-                        {property?.title ?? `Bien #${request.propertyId}`}
+                        {property ? (
+                          <Link href={`/properties/${property.id}`} className="hover:text-amber-700 hover:underline">
+                            {property.title}
+                          </Link>
+                        ) : (
+                          `Bien #${request.propertyId}`
+                        )}
                       </p>
                       {property && (
                         <p className="mt-0.5 text-sm text-stone-500">
@@ -181,7 +173,14 @@ export default function VisitRequestDetailDrawer({
                 </h3>
                 <div className="mt-2 flex items-center gap-2 rounded-xl bg-stone-50 p-4 text-sm text-stone-700 ring-1 ring-stone-100">
                   <CalendarDays className="h-4 w-4 text-amber-600" strokeWidth={1.75} />
-                  {formatDate(request.visitDate)}
+                  <div>
+                    <p>{formatVisitDate(request.visitDate, request.visitTime)}</p>
+                    {request.visitTime && (
+                      <p className="mt-0.5 text-xs text-stone-500">
+                        Durée : {request.durationMinutes} min
+                      </p>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -209,6 +208,18 @@ export default function VisitRequestDetailDrawer({
                     <div className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.75} />
                       Mise à jour le {formatDateTime(request.updatedAt)}
+                    </div>
+                  )}
+                  {request.confirmedAt && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.75} />
+                      Confirmée le {formatDateTime(request.confirmedAt)}
+                    </div>
+                  )}
+                  {request.cancelledAt && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.75} />
+                      Annulée le {formatDateTime(request.cancelledAt)}
                     </div>
                   )}
                 </div>

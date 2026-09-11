@@ -8,6 +8,16 @@ import VisitRequestsToolbar, {
 } from "@/components/admin/visitRequests/VisitRequestsToolbar";
 import VisitRequestsTable from "@/components/admin/visitRequests/VisitRequestsTable";
 import VisitRequestDetailDrawer from "@/components/admin/visitRequests/VisitRequestDetailDrawer";
+import {
+  buildVisitCenterGroups,
+  computeVisitSummaryCounts,
+  DEFAULT_DATE_FILTER,
+  getTunisTodayStr,
+  matchesDateFilter,
+  matchesViewFilter,
+  type DateFilterState,
+  type ViewFilter,
+} from "@/components/admin/visitRequests/visitScheduling";
 import type { AdminView } from "@/components/admin/AdminSidebar";
 import { getAnnonces } from "@/lib/supabase/annonces";
 import type { Property } from "@/data/properties";
@@ -36,7 +46,13 @@ export default function AdminVisitRequestsPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilterState>(DEFAULT_DATE_FILTER);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Recalculé à chaque rendu (appel Intl très léger, pas de useMemo requis)
+  // : reste correct même si l'onglet admin reste ouvert au-delà de minuit.
+  const todayStr = getTunisTodayStr();
 
   const refresh = useCallback(async () => {
     const [{ requests: data, error }, { properties: propertyData }] = await Promise.all([
@@ -72,6 +88,14 @@ export default function AdminVisitRequestsPage() {
     [properties]
   );
 
+  // Le seul routage public identifiable pour une annonce est /properties/[id]
+  // (app/properties/[id]/page.tsx, param = property.id, même espace que
+  // VisitRequest.propertyId) — réutilisé tel quel, aucune nouvelle route.
+  const propertyHrefs = useMemo(
+    () => Object.fromEntries(properties.map((property) => [property.id, `/properties/${property.id}`])),
+    [properties]
+  );
+
   const counts = useMemo(() => {
     const base: Record<StatusFilter, number> = {
       all: requests.length,
@@ -86,11 +110,17 @@ export default function AdminVisitRequestsPage() {
     return base;
   }, [requests]);
 
+  // Toujours sur la liste complète (non filtrée), indépendant des filtres
+  // actifs — même convention que `counts` ci-dessus.
+  const summary = useMemo(() => computeVisitSummaryCounts(requests, todayStr), [requests, todayStr]);
+
   const filteredRequests = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return requests.filter((request) => {
       if (statusFilter !== "all" && request.status !== statusFilter) return false;
+      if (!matchesViewFilter(request, viewFilter, todayStr)) return false;
+      if (!matchesDateFilter(request.visitDate, dateFilter, todayStr)) return false;
       if (!query) return true;
 
       const propertyTitle = propertyTitles[request.propertyId]?.toLowerCase() ?? "";
@@ -101,7 +131,12 @@ export default function AdminVisitRequestsPage() {
         propertyTitle.includes(query)
       );
     });
-  }, [requests, statusFilter, search, propertyTitles]);
+  }, [requests, statusFilter, viewFilter, dateFilter, todayStr, search, propertyTitles]);
+
+  const { upcomingGroups, historyRequests } = useMemo(
+    () => buildVisitCenterGroups(filteredRequests, todayStr),
+    [filteredRequests, todayStr]
+  );
 
   const selectedRequest = requests.find((request) => request.id === selectedId) ?? null;
   const selectedProperty =
@@ -169,30 +204,66 @@ export default function AdminVisitRequestsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="font-serif text-2xl text-stone-900">Demandes de visite</h1>
-          <p className="mt-1 text-sm text-stone-500">
-            {loading
-              ? "Chargement..."
-              : `${requests.length} demande${requests.length !== 1 ? "s" : ""} au total, dont ${counts.pending} en attente.`}
-          </p>
+          <p className="mt-1 text-sm text-stone-500">Planifiez et suivez les visites de vos clients.</p>
         </div>
 
         {loading ? (
           <p className="text-sm text-stone-500">Chargement des demandes...</p>
         ) : (
           <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: "À venir", value: summary.upcoming },
+                { label: "Aujourd'hui", value: summary.today },
+                { label: "En attente", value: summary.pending },
+                { label: "Confirmées", value: summary.confirmed },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-xl bg-white p-4 ring-1 ring-stone-100">
+                  <p className="font-serif text-2xl text-stone-900">{stat.value}</p>
+                  <p className="mt-0.5 text-xs uppercase tracking-wider text-stone-500">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
             <VisitRequestsToolbar
               search={search}
               onSearchChange={setSearch}
               statusFilter={statusFilter}
               onStatusFilterChange={setStatusFilter}
               counts={counts}
+              viewFilter={viewFilter}
+              onViewFilterChange={setViewFilter}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
             />
 
-            <VisitRequestsTable
-              requests={filteredRequests}
-              propertyTitles={propertyTitles}
-              onSelect={(request) => setSelectedId(request.id)}
-            />
+            {(viewFilter === "all" || viewFilter === "upcoming") && (
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-stone-700">À venir</h2>
+                <VisitRequestsTable
+                  groups={upcomingGroups}
+                  propertyTitles={propertyTitles}
+                  propertyHrefs={propertyHrefs}
+                  todayStr={todayStr}
+                  onSelect={(request) => setSelectedId(request.id)}
+                  emptyMessage="Aucune visite à venir ne correspond à ces critères."
+                />
+              </div>
+            )}
+
+            {(viewFilter === "all" || viewFilter === "history") && (
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-stone-700">Historique</h2>
+                <VisitRequestsTable
+                  groups={[{ requests: historyRequests }]}
+                  propertyTitles={propertyTitles}
+                  propertyHrefs={propertyHrefs}
+                  todayStr={todayStr}
+                  onSelect={(request) => setSelectedId(request.id)}
+                  emptyMessage="Aucun historique ne correspond à ces critères."
+                />
+              </div>
+            )}
           </>
         )}
       </div>
