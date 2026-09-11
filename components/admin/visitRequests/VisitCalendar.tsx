@@ -28,7 +28,9 @@ export default function VisitCalendar({ requests, propertyTitles, onSelect }: Vi
   // Valeur initiale déterministe (identique serveur/client) pour éviter tout
   // mismatch d'hydratation : "week" par défaut partout, ajusté à "day" une
   // seule fois après montage si le viewport est mobile (effet client-only,
-  // jamais lu pendant le rendu initial).
+  // jamais lu pendant le rendu initial). V3.5.B.1 : ce réglage ne fixe que
+  // la vue INITIALE — Jour/Semaine/Mois restent toutes sélectionnables
+  // ensuite sur mobile via VisitCalendarToolbar (plus de masquage).
   const [view, setView] = useState<CalendarView>("week");
   const [referenceDateStr, setReferenceDateStr] = useState(() => getTunisTodayStr());
 

@@ -349,10 +349,18 @@ export function formatPeriodLabel(view: CalendarView, referenceDateStr: string):
   return `${capitalize(MONTH_NAMES_FR[date.getUTCMonth()])} ${date.getUTCFullYear()}`;
 }
 
-// En-tête court d'une colonne jour (vue Semaine), ex. { weekday: "Lun", day: 14 }.
+// En-tête court d'une colonne jour (vue Semaine desktop), ex. { weekday: "Lun", day: 14 }.
 export function formatDayHeader(dateStr: string): { weekday: string; day: number } {
   const date = toUtcDate(dateStr);
   return { weekday: WEEKDAY_SHORT_FR[date.getUTCDay()], day: date.getUTCDate() };
+}
+
+// V3.5.B.1 — En-tête complet d'un jour pour l'agenda vertical mobile (vue
+// Semaine), ex. "Lundi 14 septembre" — pas d'année (déjà portée par le
+// libellé de période affiché dans la toolbar).
+export function formatAgendaDayHeader(dateStr: string): string {
+  const date = toUtcDate(dateStr);
+  return `${capitalize(WEEKDAY_NAMES_FR[date.getUTCDay()])} ${date.getUTCDate()} ${MONTH_NAMES_FR[date.getUTCMonth()]}`;
 }
 
 // Regroupe des demandes par visitDate — utilisé par la vue Mois (compteurs)
